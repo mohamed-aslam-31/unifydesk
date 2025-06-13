@@ -82,12 +82,12 @@ export class MemStorage implements IStorage {
       country: insertUser.country,
       state: insertUser.state,
       city: insertUser.city,
-      address: insertUser.address || null,
+      address: insertUser.address ?? null,
       password: insertUser.password,
-      firebaseUid: insertUser.firebaseUid || null,
-      role: insertUser.role || null,
+      firebaseUid: insertUser.firebaseUid ?? null,
+      role: insertUser.role ?? null,
       roleStatus: insertUser.roleStatus || "pending",
-      profilePicture: insertUser.profilePicture || null,
+      profilePicture: insertUser.profilePicture ?? null,
       id,
       emailVerified: false,
       phoneVerified: false,
@@ -158,8 +158,12 @@ export class MemStorage implements IStorage {
     } else {
       const id = this.currentOtpId++;
       const otpData: OtpAttempt = {
-        ...attempt,
         id,
+        identifier: attempt.identifier,
+        type: attempt.type,
+        attempts: attempt.attempts ?? 0,
+        lastAttempt: attempt.lastAttempt ?? null,
+        blockedUntil: attempt.blockedUntil ?? null,
         createdAt: new Date(),
       };
       this.otpAttempts.set(key, otpData);
