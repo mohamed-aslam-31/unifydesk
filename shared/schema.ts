@@ -3,7 +3,7 @@ import { z } from "zod";
 // Define the user interface for MongoDB
 export interface User {
   _id?: string;
-  id?: number;
+  id: number;
   firstName: string;
   lastName: string;
   username: string;

@@ -1,6 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage";
+import { storage } from "./storage-mongo";
 import { signupSchema, adminRoleSchema, employeeRoleSchema, shopkeeperRoleSchema } from "@shared/schema";
 import { z } from "zod";
 import crypto from "crypto";
@@ -108,7 +108,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         type,
         attempts: (attempts?.attempts || 0) + 1,
         lastAttempt: new Date(),
-        blockedUntil: null,
+        blockedUntil: undefined,
       });
 
       // TODO: Send actual OTP via email/SMS
@@ -170,9 +170,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         city: validatedData.city,
         address: validatedData.address,
         password: validatedData.password, // TODO: Hash password
-        firebaseUid: null,
-        role: null,
-        profilePicture: null,
+        firebaseUid: undefined,
+        role: undefined,
+        profilePicture: undefined,
       });
 
       // Create session
@@ -180,7 +180,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
       
       await storage.createSession({
-        userId: user.id,
+        userId: user.id!,
         sessionToken,
         expiresAt,
       });
