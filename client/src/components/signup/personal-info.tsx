@@ -39,6 +39,8 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
   const [phoneLastSent, setPhoneLastSent] = useState<Date | null>(null);
   const [emailBlocked, setEmailBlocked] = useState(false);
   const [phoneBlocked, setPhoneBlocked] = useState(false);
+  const [emailCountdown, setEmailCountdown] = useState(0);
+  const [phoneCountdown, setPhoneCountdown] = useState(0);
   const [termsModalOpen, setTermsModalOpen] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [countries, setCountries] = useState<any[]>([]);
@@ -70,7 +72,7 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
     },
   });
 
-  // Load countries on mount
+  // Load countries on mount and setup countdown timers
   useEffect(() => {
     fetch("/api/locations/countries")
       .then(res => res.json())
@@ -81,6 +83,36 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
       })
       .catch(err => console.error("Failed to load countries:", err));
   }, []);
+
+  // Email countdown timer
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (emailLastSent) {
+      interval = setInterval(() => {
+        const cooldown = getEmailOTPCooldown();
+        setEmailCountdown(cooldown);
+        if (cooldown <= 0) {
+          clearInterval(interval);
+        }
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [emailLastSent]);
+
+  // Phone countdown timer
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (phoneLastSent) {
+      interval = setInterval(() => {
+        const cooldown = getPhoneOTPCooldown();
+        setPhoneCountdown(cooldown);
+        if (cooldown <= 0) {
+          clearInterval(interval);
+        }
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [phoneLastSent]);
 
   // Username validation
   const handleUsernameChange = async (username: string) => {
@@ -572,7 +604,23 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
                   Enter the 6-digit code sent to your email
                 </p>
                 <OTPInput onComplete={handleEmailOTPComplete} />
-                <p className="text-xs text-slate-500 mt-2">Check your spam folder if you don't see the email</p>
+                <div className="mt-4 flex flex-col items-center space-y-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleSendEmailOTP}
+                    disabled={!canSendEmailOTP()}
+                    className="text-xs"
+                  >
+                    {canSendEmailOTP() ? "Resend OTP" : `Resend in ${emailCountdown}s`}
+                  </Button>
+                  <p className="text-xs text-slate-500">
+                    {emailOtpSendCount}/5 attempts used
+                    {emailOtpSendCount >= 5 && " - Max attempts reached"}
+                  </p>
+                  <p className="text-xs text-slate-500">Check your spam folder if you don't see the email</p>
+                </div>
               </div>
             </div>
           )}
@@ -608,15 +656,19 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
                         type="tel" 
                         placeholder="Enter phone number" 
                         {...field}
+                        onChange={(e) => handlePhoneChange(e.target.value)}
                         className="pr-20"
                       />
-                      <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                      <div className="absolute inset-y-0 right-0 pr-3 flex items-center space-x-2">
+                        {phoneStatus === "valid" && !phoneVerified && <Check className="h-4 w-4 text-green-500" />}
+                        {phoneStatus === "invalid" && <X className="h-4 w-4 text-red-500" />}
                         {!phoneVerified && (
                           <Button
                             type="button"
                             size="sm"
                             onClick={handleSendPhoneOTP}
                             className="h-6 px-2 text-xs"
+                            disabled={!field.value || phoneStatus === "invalid"}
                           >
                             Verify
                           </Button>
@@ -644,6 +696,9 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
                     )}
                   />
                 </div>
+                {phoneStatus === "invalid" && (
+                  <p className="text-xs text-red-600">Enter the phone number properly</p>
+                )}
                 <FormMessage />
               </FormItem>
             )}
@@ -658,6 +713,22 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
                   Enter the 6-digit code sent to your phone
                 </p>
                 <OTPInput onComplete={handlePhoneOTPComplete} />
+                <div className="mt-4 flex flex-col items-center space-y-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleSendPhoneOTP}
+                    disabled={!canSendPhoneOTP()}
+                    className="text-xs"
+                  >
+                    {canSendPhoneOTP() ? "Resend OTP" : `Resend in ${phoneCountdown}s`}
+                  </Button>
+                  <p className="text-xs text-slate-500">
+                    {phoneOtpSendCount}/5 attempts used
+                    {phoneOtpSendCount >= 5 && " - Max attempts reached"}
+                  </p>
+                </div>
               </div>
             </div>
           )}
