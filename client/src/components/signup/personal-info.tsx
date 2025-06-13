@@ -17,6 +17,7 @@ import { TermsModal } from "./terms-modal";
 import { validateField, sendOTP, verifyOTP, signup, SignupData } from "@/lib/auth";
 import { signInWithGoogle } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
+import { useReCaptcha } from "@/hooks/use-recaptcha";
 
 interface PersonalInfoProps {
   onSuccess: (sessionToken: string, user: any) => void;
@@ -39,6 +40,7 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const { toast } = useToast();
+  const { executeReCaptcha } = useReCaptcha();
 
   const form = useForm<z.infer<typeof signupSchema>>({
     resolver: zodResolver(signupSchema),
@@ -225,7 +227,13 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
 
     setIsSubmitting(true);
     try {
-      const result = await signup(data as SignupData);
+      // Execute reCAPTCHA before form submission
+      const recaptchaToken = await executeReCaptcha('signup');
+      
+      const result = await signup({ 
+        ...data as SignupData, 
+        recaptchaToken 
+      });
       onSuccess(result.sessionToken, result.user);
       toast({ title: "Account created successfully!" });
     } catch (error: any) {

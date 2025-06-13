@@ -16,6 +16,7 @@ export interface SignupData {
   address?: string;
   password: string;
   confirmPassword: string;
+  recaptchaToken?: string;
 }
 
 export interface AuthResponse {

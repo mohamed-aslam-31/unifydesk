@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { signupSchema, adminRoleSchema, employeeRoleSchema, shopkeeperRoleSchema } from "@shared/schema";
 import { z } from "zod";
 import crypto from "crypto";
+import { verifyRecaptcha } from "./recaptcha";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Validation endpoint
