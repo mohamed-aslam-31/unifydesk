@@ -1,7 +1,6 @@
 import { initializeApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, signOut } from "firebase/auth";
+import { getAuth, signInWithRedirect, GoogleAuthProvider, getRedirectResult, onAuthStateChanged, signOut } from "firebase/auth";
 
-// Firebase configuration - only initialize if API key is provided
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.firebaseapp.com`,
@@ -10,40 +9,49 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
-let app: any = null;
-if (import.meta.env.VITE_FIREBASE_API_KEY) {
-  app = initializeApp(firebaseConfig);
-}
-export const auth = app ? getAuth(app) : null;
+const app = initializeApp(firebaseConfig);
+export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 
-export const signInWithGoogle = () => {
-  if (!auth) {
-    throw new Error("Firebase not initialized. Please provide Firebase configuration.");
-  }
+// Call this function when the user clicks on the "Login" button
+export function signInWithGoogle() {
   return signInWithRedirect(auth, googleProvider);
-};
+}
 
-export const handleGoogleRedirect = async () => {
-  if (!auth) {
-    console.warn("Firebase not initialized. Skipping Google redirect handling.");
-    return null;
-  }
+// Call this function on page load when the user is redirected back to your site
+export async function handleGoogleRedirect() {
   try {
     const result = await getRedirectResult(auth);
     if (result) {
-      return result.user;
+      // This gives you a Google Access Token. You can use it to access Google APIs.
+      const credential = GoogleAuthProvider.credentialFromResult(result);
+      const token = credential?.accessToken;
+      
+      // The signed-in user info.
+      const user = result.user;
+      return { user, token };
     }
     return null;
-  } catch (error) {
-    console.error("Google redirect error:", error);
+  } catch (error: any) {
+    // Handle Errors here.
+    const errorCode = error.code;
+    const errorMessage = error.message;
+    // The email of the user's account used.
+    const email = error.customData?.email;
+    // The AuthCredential type that was used.
+    const credential = GoogleAuthProvider.credentialFromError(error);
+    
+    console.error('Google sign-in error:', { errorCode, errorMessage, email });
     throw error;
   }
-};
+}
 
-export const signOutUser = () => {
-  if (!auth) {
-    throw new Error("Firebase not initialized. Please provide Firebase configuration.");
-  }
+// Sign out function
+export function signOutUser() {
   return signOut(auth);
-};
+}
+
+// Auth state listener
+export function onAuthStateChange(callback: (user: any) => void) {
+  return onAuthStateChanged(auth, callback);
+}

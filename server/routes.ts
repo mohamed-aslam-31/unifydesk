@@ -364,6 +364,128 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Login endpoint
+  app.post("/api/auth/login", async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      
+      if (!email || !password) {
+        return res.status(400).json({ message: "Email and password are required" });
+      }
+
+      const user = await storage.getUserByEmail(email);
+      if (!user) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+
+      // TODO: Verify password hash
+      if (user.password !== password) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+
+      // Create session
+      const sessionToken = crypto.randomBytes(32).toString('hex');
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+      
+      await storage.createSession({
+        userId: user.id!,
+        sessionToken,
+        expiresAt,
+      });
+
+      res.json({ 
+        message: "Login successful", 
+        sessionToken,
+        user: { 
+          id: user.id, 
+          firstName: user.firstName, 
+          lastName: user.lastName, 
+          email: user.email,
+          role: user.role,
+          roleStatus: user.roleStatus
+        }
+      });
+    } catch (error) {
+      console.error("Login error:", error);
+      res.status(500).json({ message: "Login failed" });
+    }
+  });
+
+  // Firebase Google authentication endpoint
+  app.post("/api/auth/firebase", async (req, res) => {
+    try {
+      const { firebaseUid, email, firstName, lastName, profilePicture } = req.body;
+      
+      if (!firebaseUid || !email) {
+        return res.status(400).json({ message: "Firebase UID and email are required" });
+      }
+
+      // Check if user exists by Firebase UID
+      let user = await storage.getUserByFirebaseUid(firebaseUid);
+      
+      if (!user) {
+        // Check if user exists by email
+        user = await storage.getUserByEmail(email);
+        
+        if (user) {
+          // Link existing account with Firebase
+          user = await storage.updateUser(user.id!, { firebaseUid, profilePicture });
+        } else {
+          // Create new user
+          user = await storage.createUser({
+            firstName: firstName || "User",
+            lastName: lastName || "",
+            username: email.split("@")[0] + "_" + Date.now(), // Generate unique username
+            email,
+            phone: "",
+            countryCode: "",
+            isWhatsApp: false,
+            gender: "",
+            dateOfBirth: "",
+            country: "",
+            state: "",
+            city: "",
+            address: "",
+            password: "", // No password for Firebase users
+            firebaseUid,
+            role: "customer", // Default role for Google sign-in users
+            profilePicture,
+          });
+        }
+      }
+
+      if (!user) {
+        return res.status(500).json({ message: "Failed to create or update user" });
+      }
+
+      // Create session
+      const sessionToken = crypto.randomBytes(32).toString('hex');
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+      
+      await storage.createSession({
+        userId: user.id!,
+        sessionToken,
+        expiresAt,
+      });
+
+      res.json({ 
+        message: "Firebase authentication successful", 
+        sessionToken,
+        user: { 
+          id: user.id, 
+          firstName: user.firstName, 
+          lastName: user.lastName, 
+          email: user.email,
+          role: user.role,
+          roleStatus: user.roleStatus
+        }
+      });
+    } catch (error) {
+      console.error("Firebase auth error:", error);
+      res.status(500).json({ message: "Firebase authentication failed" });
+    }
+  });
+
   // Get current user
   app.get("/api/auth/me", async (req, res) => {
     try {

@@ -11,7 +11,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Eye, EyeOff, Loader2, AlertCircle } from "lucide-react";
-import { signInWithGoogle } from "@/lib/firebase";
+import { useFirebaseAuth } from "@/hooks/use-firebase-auth";
 import { useToast } from "@/hooks/use-toast";
 
 const loginSchema = z.object({
@@ -24,6 +24,7 @@ export default function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const { user, signIn, loading: firebaseLoading } = useFirebaseAuth();
   
   // Check if redirected from signup with already exists message
   const [showAlreadyExists, setShowAlreadyExists] = useState(false);
@@ -34,6 +35,61 @@ export default function LoginPage() {
       setShowAlreadyExists(true);
     }
   }, []);
+
+  // Handle Firebase authentication success
+  useEffect(() => {
+    if (user && !firebaseLoading) {
+      handleFirebaseAuth(user);
+    }
+  }, [user, firebaseLoading]);
+
+  const handleFirebaseAuth = async (firebaseUser: any) => {
+    try {
+      const response = await fetch("/api/auth/firebase", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          firebaseUid: firebaseUser.uid,
+          email: firebaseUser.email,
+          firstName: firebaseUser.displayName?.split(" ")[0] || "",
+          lastName: firebaseUser.displayName?.split(" ").slice(1).join(" ") || "",
+          profilePicture: firebaseUser.photoURL,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Firebase authentication failed");
+      }
+
+      const result = await response.json();
+      
+      // Store session token
+      localStorage.setItem("sessionToken", result.sessionToken);
+      
+      toast({
+        title: "Login successful!",
+        description: "Welcome to UnifyDesk",
+      });
+
+      // Redirect based on user role
+      if (result.user.role === "customer") {
+        setLocation("/home");
+      } else if (result.user.role && result.user.roleStatus === "approved") {
+        setLocation("/dashboard");
+      } else if (result.user.role && result.user.roleStatus === "pending") {
+        setLocation("/pending");
+      } else {
+        setLocation("/choose-role");
+      }
+    } catch (error: any) {
+      toast({
+        title: "Authentication failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
 
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -90,7 +146,7 @@ export default function LoginPage() {
 
   const handleGoogleLogin = async () => {
     try {
-      await signInWithGoogle();
+      await signIn();
     } catch (error) {
       toast({
         title: "Google login failed",
