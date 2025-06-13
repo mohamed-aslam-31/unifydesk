@@ -7,6 +7,13 @@ import crypto from "crypto";
 import { verifyRecaptcha } from "./recaptcha";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // reCAPTCHA configuration endpoint
+  app.get("/api/recaptcha-config", (req, res) => {
+    res.json({
+      siteKey: process.env.RECAPTCHA_SITE_KEY
+    });
+  });
+
   // Validation endpoint
   app.post("/api/validate", async (req, res) => {
     try {
