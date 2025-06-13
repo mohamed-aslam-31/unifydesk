@@ -43,6 +43,7 @@ export async function handleGoogleRedirect() {
       
       // The signed-in user info.
       const user = result.user;
+      console.log('Google redirect successful:', user.email);
       return { user, token };
     }
     return null;
@@ -56,6 +57,11 @@ export async function handleGoogleRedirect() {
     const credential = GoogleAuthProvider.credentialFromError(error);
     
     console.error('Google sign-in error:', { errorCode, errorMessage, email });
+    
+    if (errorCode === 'auth/unauthorized-domain') {
+      throw new Error('This domain is not authorized for Google sign-in. Please contact support.');
+    }
+    
     throw error;
   }
 }
