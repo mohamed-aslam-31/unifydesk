@@ -52,7 +52,7 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
       phone: "",
       countryCode: "+91",
       isWhatsApp: false,
-      gender: "",
+      gender: undefined,
       dateOfBirth: "",
       country: "",
       state: "",
@@ -96,7 +96,7 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
   const handleEmailChange = async (email: string) => {
     form.setValue("email", email);
     
-    if (email.includes("@")) {
+    if (email.includes("@") && email.includes(".")) {
       setEmailStatus("checking");
       try {
         const result = await validateField("email", email);
@@ -232,7 +232,7 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
       
       const result = await signup({ 
         ...data as SignupData, 
-        recaptchaToken 
+        recaptchaToken: recaptchaToken ?? ""
       });
       onSuccess(result.sessionToken, result.user);
       toast({ title: "Account created successfully!" });
@@ -667,33 +667,52 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
             <FormField
               control={form.control}
               name="confirmPassword"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Confirm Password *</FormLabel>
-                  <FormControl>
-                    <div className="relative">
-                      <Input
-                        type={showConfirmPassword ? "text" : "password"}
-                        placeholder="Re-enter your password"
-                        {...field}
-                        className="pr-10"
-                      />
-                      <button
-                        type="button"
-                        className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      >
-                        {showConfirmPassword ? (
-                          <EyeOff className="h-4 w-4 text-slate-400" />
-                        ) : (
-                          <Eye className="h-4 w-4 text-slate-400" />
-                        )}
-                      </button>
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+              render={({ field }) => {
+                const password = form.watch("password");
+                const confirmPassword = field.value;
+                const isMatching = password && confirmPassword && password === confirmPassword;
+                const isNotMatching = password && confirmPassword && password !== confirmPassword;
+                
+                return (
+                  <FormItem>
+                    <FormLabel>Confirm Password *</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Input
+                          type={showConfirmPassword ? "text" : "password"}
+                          placeholder="Re-enter your password"
+                          {...field}
+                          className={`pr-16 ${
+                            isMatching 
+                              ? "border-green-500 focus:border-green-500 focus:ring-green-500" 
+                              : isNotMatching 
+                              ? "border-red-500 focus:border-red-500 focus:ring-red-500" 
+                              : ""
+                          }`}
+                        />
+                        <div className="absolute inset-y-0 right-0 pr-3 flex items-center space-x-1">
+                          {isMatching && <Check className="h-4 w-4 text-green-500" />}
+                          {isNotMatching && <X className="h-4 w-4 text-red-500" />}
+                          <button
+                            type="button"
+                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          >
+                            {showConfirmPassword ? (
+                              <EyeOff className="h-4 w-4 text-slate-400" />
+                            ) : (
+                              <Eye className="h-4 w-4 text-slate-400" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    </FormControl>
+                    {isMatching && (
+                      <p className="text-xs text-green-600">Passwords match</p>
+                    )}
+                    <FormMessage />
+                  </FormItem>
+                );
+              }}
             />
           </div>
 
@@ -716,7 +735,7 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
               <Checkbox
                 id="terms"
                 checked={termsAccepted}
-                onCheckedChange={setTermsAccepted}
+                onCheckedChange={(checked) => setTermsAccepted(checked === true)}
               />
               <Label htmlFor="terms" className="text-sm text-slate-600 dark:text-slate-400">
                 I agree to the{" "}

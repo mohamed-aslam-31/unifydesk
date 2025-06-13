@@ -116,15 +116,17 @@ export type InsertRoleData = z.infer<typeof insertRoleDataSchema>;
 
 // Validation schemas
 export const signupSchema = z.object({
-  firstName: z.string().min(2, "First name must be at least 2 characters"),
-  lastName: z.string().min(2, "Last name must be at least 2 characters"),
-  username: z.string().min(3, "Username must be at least 3 characters").regex(/^[a-zA-Z0-9_]+$/, "Username can only contain letters, numbers, and underscores"),
-  email: z.string().email("Invalid email address"),
-  phone: z.string().min(10, "Phone number must be at least 10 digits"),
+  firstName: z.string().min(1, "Enter your First Name").min(2, "First name must be at least 2 characters"),
+  lastName: z.string().optional(),
+  username: z.string().min(1, "Enter your Username").min(3, "Username must be at least 3 characters").regex(/^[a-zA-Z0-9_]+$/, "Username can only contain letters, numbers, and underscores"),
+  email: z.string().min(1, "Enter Your Email").email("Enter a valid email address"),
+  phone: z.string().min(1, "Enter your phone number").min(10, "Phone number must be at least 10 digits"),
   countryCode: z.string().min(1, "Country code is required"),
   isWhatsApp: z.boolean().default(false),
-  gender: z.enum(["male", "female", "other", "prefer-not-to-say"]),
-  dateOfBirth: z.string().refine((date) => {
+  gender: z.enum(["male", "female", "other", "prefer-not-to-say"], {
+    errorMap: () => ({ message: "Select your gender" })
+  }),
+  dateOfBirth: z.string().min(1, "Select your Date of Birth").refine((date) => {
     const birth = new Date(date);
     const today = new Date();
     const age = today.getFullYear() - birth.getFullYear();
@@ -133,13 +135,14 @@ export const signupSchema = z.object({
   country: z.string().min(1, "Country is required"),
   state: z.string().min(1, "State is required"),
   city: z.string().min(1, "City is required"),
-  address: z.string().optional(),
+  address: z.string().min(1, "Enter your address"),
   password: z.string()
+    .min(1, "Enter the password")
     .min(8, "Password must be at least 8 characters")
     .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
     .regex(/[0-9]/, "Password must contain at least one number")
     .regex(/[!@#$%^&*(),.?":{}|<>]/, "Password must contain at least one special character"),
-  confirmPassword: z.string(),
+  confirmPassword: z.string().min(1, "Enter the confirm password"),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
