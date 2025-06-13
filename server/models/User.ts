@@ -1,7 +1,27 @@
 import mongoose, { Schema, Document } from 'mongoose';
-import { User as UserInterface } from '@shared/schema';
 
-export interface UserDocument extends UserInterface, Document {}
+export interface UserDocument extends Document {
+  firstName: string;
+  lastName: string;
+  username: string;
+  email: string;
+  phone: string;
+  countryCode: string;
+  isWhatsApp: boolean;
+  gender: string;
+  dateOfBirth: string;
+  country: string;
+  state: string;
+  city: string;
+  address?: string;
+  password: string;
+  firebaseUid?: string;
+  role?: string;
+  roleStatus: string;
+  emailVerified: boolean;
+  phoneVerified: boolean;
+  profilePicture?: string;
+}
 
 const UserSchema = new Schema<UserDocument>({
   firstName: { type: String, required: true },

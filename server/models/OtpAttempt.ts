@@ -1,7 +1,12 @@
 import mongoose, { Schema, Document } from 'mongoose';
-import { OtpAttempt as OtpAttemptInterface } from '@shared/schema';
 
-export interface OtpAttemptDocument extends Omit<OtpAttemptInterface, '_id'>, Document {}
+export interface OtpAttemptDocument extends Document {
+  identifier: string;
+  type: string;
+  attempts: number;
+  lastAttempt?: Date;
+  blockedUntil?: Date;
+}
 
 const OtpAttemptSchema = new Schema<OtpAttemptDocument>({
   identifier: { type: String, required: true },

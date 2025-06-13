@@ -1,7 +1,10 @@
 import mongoose, { Schema, Document } from 'mongoose';
-import { Session as SessionInterface } from '@shared/schema';
 
-export interface SessionDocument extends SessionInterface, Document {}
+export interface SessionDocument extends Document {
+  userId: number;
+  sessionToken: string;
+  expiresAt: Date;
+}
 
 const SessionSchema = new Schema<SessionDocument>({
   userId: { type: Number, required: true },

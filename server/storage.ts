@@ -1,4 +1,4 @@
-import { users, sessions, otpAttempts, roleData, type User, type InsertUser, type Session, type InsertSession, type OtpAttempt, type InsertOtpAttempt, type RoleData, type InsertRoleData } from "@shared/schema";
+import { type User, type InsertUser, type Session, type InsertSession, type OtpAttempt, type InsertOtpAttempt, type RoleData, type InsertRoleData } from "@shared/schema";
 
 export interface IStorage {
   // User methods
