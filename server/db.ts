@@ -1,17 +1,21 @@
 import { drizzle } from 'drizzle-orm/node-postgres';
 import pkg from 'pg';
-const { Client } = pkg;
+const { Pool } = pkg;
 import * as schema from '@shared/schema';
 
-const client = new Client({
+const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
+  max: 20,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 2000,
 });
 
-export const db = drizzle(client, { schema });
+export const db = drizzle(pool, { schema });
 
 export async function connectToDatabase() {
   try {
-    await client.connect();
+    const client = await pool.connect();
+    client.release();
     console.log('Connected to PostgreSQL database');
   } catch (error) {
     console.error('Database connection error:', error);
@@ -21,7 +25,7 @@ export async function connectToDatabase() {
 
 export async function disconnectFromDatabase() {
   try {
-    await client.end();
+    await pool.end();
     console.log('Disconnected from PostgreSQL database');
   } catch (error) {
     console.error('Database disconnection error:', error);

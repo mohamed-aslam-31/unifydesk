@@ -38,8 +38,12 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Connect to PostgreSQL database
-  await connectToDatabase();
+  // Try to connect to PostgreSQL database, fallback to in-memory storage if unavailable
+  try {
+    await connectToDatabase();
+  } catch (error) {
+    console.log("PostgreSQL unavailable, continuing with in-memory storage");
+  }
   
   const server = await registerRoutes(app);
 
