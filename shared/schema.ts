@@ -1,94 +1,67 @@
-import { pgTable, text, serial, integer, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
-import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export const users = pgTable("users", {
-  id: serial("id").primaryKey(),
-  firstName: text("first_name").notNull(),
-  lastName: text("last_name").notNull(),
-  username: text("username").notNull().unique(),
-  email: text("email").notNull().unique(),
-  phone: text("phone").notNull(),
-  countryCode: text("country_code").notNull(),
-  isWhatsApp: boolean("is_whatsapp").default(false),
-  gender: text("gender").notNull(),
-  dateOfBirth: text("date_of_birth").notNull(),
-  country: text("country").notNull(),
-  state: text("state").notNull(),
-  city: text("city").notNull(),
-  address: text("address"),
-  password: text("password").notNull(),
-  firebaseUid: text("firebase_uid"),
-  role: text("role"), // 'admin' | 'employee' | 'shopkeeper' | 'customer'
-  roleStatus: text("role_status").default("pending"), // 'pending' | 'approved' | 'rejected'
-  emailVerified: boolean("email_verified").default(false),
-  phoneVerified: boolean("phone_verified").default(false),
-  profilePicture: text("profile_picture"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
+// Define the user interface for MongoDB
+export interface User {
+  _id?: string;
+  id?: number;
+  firstName: string;
+  lastName: string;
+  username: string;
+  email: string;
+  phone: string;
+  countryCode: string;
+  isWhatsApp: boolean;
+  gender: string;
+  dateOfBirth: string;
+  country: string;
+  state: string;
+  city: string;
+  address?: string;
+  password: string;
+  firebaseUid?: string;
+  role?: string; // 'admin' | 'employee' | 'shopkeeper' | 'customer'
+  roleStatus: string; // 'pending' | 'approved' | 'rejected'
+  emailVerified: boolean;
+  phoneVerified: boolean;
+  profilePicture?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
-export const otpAttempts = pgTable("otp_attempts", {
-  id: serial("id").primaryKey(),
-  identifier: text("identifier").notNull(), // email or phone
-  type: text("type").notNull(), // 'email' | 'phone'
-  attempts: integer("attempts").default(0),
-  lastAttempt: timestamp("last_attempt"),
-  blockedUntil: timestamp("blocked_until"),
-  createdAt: timestamp("created_at").defaultNow(),
-});
+export interface OtpAttempt {
+  _id?: string;
+  id?: number;
+  identifier: string; // email or phone
+  type: string; // 'email' | 'phone'
+  attempts: number;
+  lastAttempt?: Date;
+  blockedUntil?: Date;
+  createdAt: Date;
+}
 
-export const roleData = pgTable("role_data", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id),
-  role: text("role").notNull(),
-  data: jsonb("data").notNull(), // Store role-specific data
-  createdAt: timestamp("created_at").defaultNow(),
-});
+export interface RoleData {
+  _id?: string;
+  id?: number;
+  userId: number;
+  role: string;
+  data: any; // Store role-specific data
+  createdAt: Date;
+}
 
-export const sessions = pgTable("sessions", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id),
-  sessionToken: text("session_token").notNull().unique(),
-  expiresAt: timestamp("expires_at").notNull(),
-  createdAt: timestamp("created_at").defaultNow(),
-});
+export interface Session {
+  _id?: string;
+  id?: number;
+  userId: number;
+  sessionToken: string;
+  expiresAt: Date;
+  createdAt: Date;
+}
 
-export const insertUserSchema = createInsertSchema(users).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-  emailVerified: true,
-  phoneVerified: true,
-  roleStatus: true,
-});
-
-export const insertOtpAttemptSchema = createInsertSchema(otpAttempts).omit({
-  id: true,
-  createdAt: true,
-});
-
-export const insertRoleDataSchema = createInsertSchema(roleData).omit({
-  id: true,
-  createdAt: true,
-});
-
-export const insertSessionSchema = createInsertSchema(sessions).omit({
-  id: true,
-  createdAt: true,
-});
-
-export type InsertUser = z.infer<typeof insertUserSchema>;
-export type User = typeof users.$inferSelect;
-
-export type InsertOtpAttempt = z.infer<typeof insertOtpAttemptSchema>;
-export type OtpAttempt = typeof otpAttempts.$inferSelect;
-
-export type InsertRoleData = z.infer<typeof insertRoleDataSchema>;
-export type RoleData = typeof roleData.$inferSelect;
-
-export type InsertSession = z.infer<typeof insertSessionSchema>;
-export type Session = typeof sessions.$inferSelect;
+// Insert types for creating new records
+export type InsertUser = Omit<User, '_id' | 'id' | 'createdAt' | 'updatedAt' | 'emailVerified' | 'phoneVerified' | 'roleStatus'>;
+export type InsertOtpAttempt = Omit<OtpAttempt, '_id' | 'id' | 'createdAt'>;
+export type InsertRoleData = Omit<RoleData, '_id' | 'id' | 'createdAt'>;
+export type InsertSession = Omit<Session, '_id' | 'id' | 'createdAt'>;
 
 // Validation schemas
 export const signupSchema = z.object({
