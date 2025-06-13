@@ -41,9 +41,12 @@ export function useFirebaseAuth() {
 
   const signIn = async () => {
     try {
+      console.log('Starting Google sign-in process...');
       setState(prev => ({ ...prev, error: null }));
       await signInWithGoogle();
+      console.log('Google sign-in redirect initiated');
     } catch (error: any) {
+      console.error('Google sign-in error:', error);
       setState(prev => ({ ...prev, error: error.message }));
     }
   };

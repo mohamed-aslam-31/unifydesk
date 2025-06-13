@@ -146,11 +146,13 @@ export default function LoginPage() {
 
   const handleGoogleLogin = async () => {
     try {
+      console.log('Google login button clicked');
       await signIn();
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Google login error:', error);
       toast({
         title: "Google login failed",
-        description: "Please try again",
+        description: error.message || "Please try again",
         variant: "destructive",
       });
     }

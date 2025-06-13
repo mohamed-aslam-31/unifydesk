@@ -9,13 +9,27 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
+console.log('Firebase Config:', {
+  apiKey: firebaseConfig.apiKey ? 'Set' : 'Missing',
+  authDomain: firebaseConfig.authDomain,
+  projectId: firebaseConfig.projectId,
+  storageBucket: firebaseConfig.storageBucket,
+  appId: firebaseConfig.appId ? 'Set' : 'Missing'
+});
+
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 
 // Call this function when the user clicks on the "Login" button
 export function signInWithGoogle() {
-  return signInWithRedirect(auth, googleProvider);
+  console.log('Initiating Google sign-in...');
+  try {
+    return signInWithRedirect(auth, googleProvider);
+  } catch (error) {
+    console.error('Error initiating Google sign-in:', error);
+    throw error;
+  }
 }
 
 // Call this function on page load when the user is redirected back to your site
