@@ -10,8 +10,26 @@ import SignupPage from "@/pages/signup";
 import ChooseRolePage from "@/pages/choose-role";
 import LoginPage from "@/pages/login";
 import HomePage from "@/pages/home";
+import { useEffect } from "react";
+import { handleGoogleRedirect } from "@/lib/firebase";
 
 function Router() {
+  useEffect(() => {
+    // Handle Firebase redirect on app initialization
+    const initializeFirebase = async () => {
+      try {
+        const result = await handleGoogleRedirect();
+        if (result) {
+          console.log("Firebase initialized and redirect handled");
+        }
+      } catch (error) {
+        console.warn("Firebase not initialized. Skipping Google redirect handling.");
+      }
+    };
+    
+    initializeFirebase();
+  }, []);
+
   return (
     <Switch>
       <Route path="/" component={HomePage} />
