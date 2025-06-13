@@ -1,67 +1,118 @@
 import { z } from "zod";
+import { pgTable, serial, text, varchar, boolean, timestamp, integer, json } from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
+import { createInsertSchema } from "drizzle-zod";
 
-// Define the user interface for MongoDB
-export interface User {
-  _id?: string;
-  id: number;
-  firstName: string;
-  lastName: string;
-  username: string;
-  email: string;
-  phone: string;
-  countryCode: string;
-  isWhatsApp: boolean;
-  gender: string;
-  dateOfBirth: string;
-  country: string;
-  state: string;
-  city: string;
-  address?: string;
-  password: string;
-  firebaseUid?: string;
-  role?: string; // 'admin' | 'employee' | 'shopkeeper' | 'customer'
-  roleStatus: string; // 'pending' | 'approved' | 'rejected'
-  emailVerified: boolean;
-  phoneVerified: boolean;
-  profilePicture?: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
+// Define PostgreSQL tables with Drizzle ORM
+export const users = pgTable('users', {
+  id: serial('id').primaryKey(),
+  firstName: varchar('first_name', { length: 100 }).notNull(),
+  lastName: varchar('last_name', { length: 100 }).notNull(),
+  username: varchar('username', { length: 50 }).notNull().unique(),
+  email: varchar('email', { length: 255 }).notNull().unique(),
+  phone: varchar('phone', { length: 20 }).notNull(),
+  countryCode: varchar('country_code', { length: 10 }).notNull(),
+  isWhatsApp: boolean('is_whatsapp').notNull().default(false),
+  gender: varchar('gender', { length: 20 }).notNull(),
+  dateOfBirth: varchar('date_of_birth', { length: 10 }).notNull(),
+  country: varchar('country', { length: 100 }).notNull(),
+  state: varchar('state', { length: 100 }).notNull(),
+  city: varchar('city', { length: 100 }).notNull(),
+  address: text('address'),
+  password: text('password').notNull(),
+  firebaseUid: varchar('firebase_uid', { length: 128 }),
+  role: varchar('role', { length: 20 }),
+  roleStatus: varchar('role_status', { length: 20 }).notNull().default('pending'),
+  emailVerified: boolean('email_verified').notNull().default(false),
+  phoneVerified: boolean('phone_verified').notNull().default(false),
+  profilePicture: text('profile_picture'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
 
-export interface OtpAttempt {
-  _id?: string;
-  id?: number;
-  identifier: string; // email or phone
-  type: string; // 'email' | 'phone'
-  attempts: number;
-  lastAttempt?: Date;
-  blockedUntil?: Date;
-  createdAt: Date;
-}
+export const sessions = pgTable('sessions', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').notNull().references(() => users.id),
+  sessionToken: varchar('session_token', { length: 255 }).notNull().unique(),
+  expiresAt: timestamp('expires_at').notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
 
-export interface RoleData {
-  _id?: string;
-  id?: number;
-  userId: number;
-  role: string;
-  data: any; // Store role-specific data
-  createdAt: Date;
-}
+export const otpAttempts = pgTable('otp_attempts', {
+  id: serial('id').primaryKey(),
+  identifier: varchar('identifier', { length: 255 }).notNull(),
+  type: varchar('type', { length: 10 }).notNull(),
+  attempts: integer('attempts').notNull().default(0),
+  lastAttempt: timestamp('last_attempt'),
+  blockedUntil: timestamp('blocked_until'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
 
-export interface Session {
-  _id?: string;
-  id?: number;
-  userId: number;
-  sessionToken: string;
-  expiresAt: Date;
-  createdAt: Date;
-}
+export const roleData = pgTable('role_data', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').notNull().references(() => users.id),
+  role: varchar('role', { length: 20 }).notNull(),
+  data: json('data').notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
 
-// Insert types for creating new records
-export type InsertUser = Omit<User, '_id' | 'id' | 'createdAt' | 'updatedAt' | 'emailVerified' | 'phoneVerified' | 'roleStatus'>;
-export type InsertOtpAttempt = Omit<OtpAttempt, '_id' | 'id' | 'createdAt'>;
-export type InsertRoleData = Omit<RoleData, '_id' | 'id' | 'createdAt'>;
-export type InsertSession = Omit<Session, '_id' | 'id' | 'createdAt'>;
+// Define relations
+export const usersRelations = relations(users, ({ many }) => ({
+  sessions: many(sessions),
+  roleData: many(roleData),
+}));
+
+export const sessionsRelations = relations(sessions, ({ one }) => ({
+  user: one(users, {
+    fields: [sessions.userId],
+    references: [users.id],
+  }),
+}));
+
+export const roleDataRelations = relations(roleData, ({ one }) => ({
+  user: one(users, {
+    fields: [roleData.userId],
+    references: [users.id],
+  }),
+}));
+
+// Export types
+export type User = typeof users.$inferSelect;
+export type NewUser = typeof users.$inferInsert;
+export type Session = typeof sessions.$inferSelect;
+export type NewSession = typeof sessions.$inferInsert;
+export type OtpAttempt = typeof otpAttempts.$inferSelect;
+export type NewOtpAttempt = typeof otpAttempts.$inferInsert;
+export type RoleData = typeof roleData.$inferSelect;
+export type NewRoleData = typeof roleData.$inferInsert;
+
+// Insert schemas with Drizzle-Zod
+export const insertUserSchema = createInsertSchema(users).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertSessionSchema = createInsertSchema(sessions).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertOtpAttemptSchema = createInsertSchema(otpAttempts).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertRoleDataSchema = createInsertSchema(roleData).omit({
+  id: true,
+  createdAt: true,
+});
+
+// Insert types
+export type InsertUser = z.infer<typeof insertUserSchema>;
+export type InsertSession = z.infer<typeof insertSessionSchema>;
+export type InsertOtpAttempt = z.infer<typeof insertOtpAttemptSchema>;
+export type InsertRoleData = z.infer<typeof insertRoleDataSchema>;
 
 // Validation schemas
 export const signupSchema = z.object({
