@@ -301,7 +301,7 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
               name="lastName"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Last Name *</FormLabel>
+                  <FormLabel>Last Name</FormLabel>
                   <FormControl>
                     <Input placeholder="Enter your last name" {...field} />
                   </FormControl>
@@ -615,7 +615,7 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
               name="address"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Address</FormLabel>
+                  <FormLabel>Address *</FormLabel>
                   <FormControl>
                     <Textarea
                       rows={3}
