@@ -8,7 +8,7 @@ export interface SessionDocument extends Document {
 
 const SessionSchema = new Schema<SessionDocument>({
   userId: { type: Number, required: true },
-  sessionToken: { type: String, required: true, unique: true },
+  sessionToken: { type: String, required: true },
   expiresAt: { type: Date, required: true },
 }, {
   timestamps: true

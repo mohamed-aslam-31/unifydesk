@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 
-const MONGODB_URI = process.env.MONGODB_URI || process.env.MONGODB_URI_PROD || 'mongodb://localhost:27017/unifydesk';
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/unifydesk';
 
 export async function connectToDatabase() {
   try {
