@@ -1,4 +1,6 @@
-import { type User, type InsertUser, type Session, type InsertSession, type OtpAttempt, type InsertOtpAttempt, type RoleData, type InsertRoleData } from "@shared/schema";
+import { type User, type InsertUser, type Session, type InsertSession, type OtpAttempt, type InsertOtpAttempt, type RoleData, type InsertRoleData, users, sessions, otpAttempts, roleData } from "@shared/schema";
+import { db } from "./db";
+import { eq, and } from "drizzle-orm";
 
 export interface IStorage {
   // User methods
@@ -68,11 +70,27 @@ export class MemStorage implements IStorage {
     const id = this.currentUserId++;
     const now = new Date();
     const user: User = {
-      ...insertUser,
+      firstName: insertUser.firstName,
+      lastName: insertUser.lastName,
+      username: insertUser.username,
+      email: insertUser.email,
+      phone: insertUser.phone,
+      countryCode: insertUser.countryCode,
+      isWhatsApp: insertUser.isWhatsApp ?? false,
+      gender: insertUser.gender,
+      dateOfBirth: insertUser.dateOfBirth,
+      country: insertUser.country,
+      state: insertUser.state,
+      city: insertUser.city,
+      address: insertUser.address || null,
+      password: insertUser.password,
+      firebaseUid: insertUser.firebaseUid || null,
+      role: insertUser.role || null,
+      roleStatus: insertUser.roleStatus || "pending",
+      profilePicture: insertUser.profilePicture || null,
       id,
       emailVerified: false,
       phoneVerified: false,
-      roleStatus: "pending",
       createdAt: now,
       updatedAt: now,
     };
@@ -173,4 +191,132 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+export class DatabaseStorage implements IStorage {
+  async getUser(id: number): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user || undefined;
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user || undefined;
+  }
+
+  async getUserByFirebaseUid(firebaseUid: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.firebaseUid, firebaseUid));
+    return user || undefined;
+  }
+
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const [user] = await db
+      .insert(users)
+      .values({
+        ...insertUser,
+        address: insertUser.address || null,
+        isWhatsApp: insertUser.isWhatsApp ?? false
+      })
+      .returning();
+    return user;
+  }
+
+  async updateUser(id: number, updates: Partial<User>): Promise<User | undefined> {
+    const [user] = await db
+      .update(users)
+      .set(updates)
+      .where(eq(users.id, id))
+      .returning();
+    return user || undefined;
+  }
+
+  async createSession(session: InsertSession): Promise<Session> {
+    const [newSession] = await db
+      .insert(sessions)
+      .values(session)
+      .returning();
+    return newSession;
+  }
+
+  async getSession(sessionToken: string): Promise<Session | undefined> {
+    const [session] = await db
+      .select()
+      .from(sessions)
+      .where(eq(sessions.sessionToken, sessionToken));
+    return session || undefined;
+  }
+
+  async deleteSession(sessionToken: string): Promise<void> {
+    await db.delete(sessions).where(eq(sessions.sessionToken, sessionToken));
+  }
+
+  async getOtpAttempts(identifier: string, type: string): Promise<OtpAttempt | undefined> {
+    const [attempt] = await db
+      .select()
+      .from(otpAttempts)
+      .where(and(eq(otpAttempts.identifier, identifier), eq(otpAttempts.type, type)));
+    return attempt || undefined;
+  }
+
+  async createOrUpdateOtpAttempts(attempt: InsertOtpAttempt): Promise<OtpAttempt> {
+    const existing = await this.getOtpAttempts(attempt.identifier, attempt.type);
+    
+    if (existing) {
+      const [updated] = await db
+        .update(otpAttempts)
+        .set({
+          attempts: attempt.attempts || existing.attempts,
+          lastAttempt: attempt.lastAttempt || existing.lastAttempt,
+          blockedUntil: attempt.blockedUntil || existing.blockedUntil
+        })
+        .where(eq(otpAttempts.id, existing.id))
+        .returning();
+      return updated;
+    } else {
+      const [newAttempt] = await db
+        .insert(otpAttempts)
+        .values({
+          ...attempt,
+          attempts: attempt.attempts || 0
+        })
+        .returning();
+      return newAttempt;
+    }
+  }
+
+  async createRoleData(roleDataInsert: InsertRoleData): Promise<RoleData> {
+    const [data] = await db
+      .insert(roleData)
+      .values(roleDataInsert)
+      .returning();
+    return data;
+  }
+
+  async getRoleDataByUser(userId: number): Promise<RoleData[]> {
+    return await db
+      .select()
+      .from(roleData)
+      .where(eq(roleData.userId, userId));
+  }
+
+  async isUsernameAvailable(username: string): Promise<boolean> {
+    const [user] = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.username, username));
+    return !user;
+  }
+
+  async isEmailAvailable(email: string): Promise<boolean> {
+    const [user] = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.email, email));
+    return !user;
+  }
+}
+
+export const storage = new DatabaseStorage();
