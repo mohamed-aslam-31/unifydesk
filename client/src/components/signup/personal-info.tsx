@@ -27,11 +27,18 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [usernameStatus, setUsernameStatus] = useState<"idle" | "checking" | "available" | "taken">("idle");
-  const [emailStatus, setEmailStatus] = useState<"idle" | "checking" | "available" | "taken">("idle");
+  const [emailStatus, setEmailStatus] = useState<"idle" | "checking" | "available" | "taken" | "invalid">("idle");
+  const [phoneStatus, setPhoneStatus] = useState<"idle" | "checking" | "valid" | "invalid">("idle");
   const [showEmailOTP, setShowEmailOTP] = useState(false);
   const [showPhoneOTP, setShowPhoneOTP] = useState(false);
   const [emailVerified, setEmailVerified] = useState(false);
   const [phoneVerified, setPhoneVerified] = useState(false);
+  const [emailOtpSendCount, setEmailOtpSendCount] = useState(0);
+  const [phoneOtpSendCount, setPhoneOtpSendCount] = useState(0);
+  const [emailLastSent, setEmailLastSent] = useState<Date | null>(null);
+  const [phoneLastSent, setPhoneLastSent] = useState<Date | null>(null);
+  const [emailBlocked, setEmailBlocked] = useState(false);
+  const [phoneBlocked, setPhoneBlocked] = useState(false);
   const [termsModalOpen, setTermsModalOpen] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [countries, setCountries] = useState<any[]>([]);
@@ -92,21 +99,103 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
     }
   };
 
-  // Email validation
+  // Email validation with proper format checking
+  const isValidEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
   const handleEmailChange = async (email: string) => {
     form.setValue("email", email);
     
-    if (email.includes("@") && email.includes(".")) {
-      setEmailStatus("checking");
-      try {
-        const result = await validateField("email", email);
-        setEmailStatus(result.available ? "available" : "taken");
-      } catch (error) {
-        setEmailStatus("idle");
-      }
-    } else {
+    if (!email) {
+      setEmailStatus("idle");
+      return;
+    }
+    
+    if (!isValidEmail(email)) {
+      setEmailStatus("invalid");
+      return;
+    }
+    
+    setEmailStatus("checking");
+    try {
+      const result = await validateField("email", email);
+      setEmailStatus(result.available ? "available" : "taken");
+    } catch (error) {
       setEmailStatus("idle");
     }
+  };
+
+  // Phone validation with country code specific rules
+  const getPhoneValidation = (countryCode: string, phone: string) => {
+    const phoneDigits = phone.replace(/\D/g, '');
+    
+    switch (countryCode) {
+      case "+91": // India
+        return phoneDigits.length === 10;
+      case "+1": // US/Canada
+        return phoneDigits.length === 10;
+      case "+44": // UK
+        return phoneDigits.length === 10 || phoneDigits.length === 11;
+      case "+86": // China
+        return phoneDigits.length === 11;
+      case "+81": // Japan
+        return phoneDigits.length === 10 || phoneDigits.length === 11;
+      default:
+        return phoneDigits.length >= 8 && phoneDigits.length <= 15;
+    }
+  };
+
+  const handlePhoneChange = (phone: string) => {
+    form.setValue("phone", phone);
+    const countryCode = form.getValues("countryCode");
+    
+    if (!phone) {
+      setPhoneStatus("idle");
+      return;
+    }
+    
+    if (getPhoneValidation(countryCode, phone)) {
+      setPhoneStatus("valid");
+    } else {
+      setPhoneStatus("invalid");
+    }
+  };
+
+  // OTP rate limiting functions
+  const canSendEmailOTP = () => {
+    if (emailBlocked) return false;
+    if (emailOtpSendCount >= 5) return false;
+    if (emailLastSent) {
+      const timeDiff = new Date().getTime() - emailLastSent.getTime();
+      return timeDiff >= 180000; // 3 minutes
+    }
+    return true;
+  };
+
+  const canSendPhoneOTP = () => {
+    if (phoneBlocked) return false;
+    if (phoneOtpSendCount >= 5) return false;
+    if (phoneLastSent) {
+      const timeDiff = new Date().getTime() - phoneLastSent.getTime();
+      return timeDiff >= 180000; // 3 minutes
+    }
+    return true;
+  };
+
+  const getEmailOTPCooldown = () => {
+    if (!emailLastSent) return 0;
+    const timeDiff = new Date().getTime() - emailLastSent.getTime();
+    const remaining = 180000 - timeDiff;
+    return remaining > 0 ? Math.ceil(remaining / 1000) : 0;
+  };
+
+  const getPhoneOTPCooldown = () => {
+    if (!phoneLastSent) return 0;
+    const timeDiff = new Date().getTime() - phoneLastSent.getTime();
+    const remaining = 180000 - timeDiff;
+    return remaining > 0 ? Math.ceil(remaining / 1000) : 0;
   };
 
   // Location cascading
@@ -153,14 +242,35 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
     }
   };
 
-  // OTP handlers
+  // OTP handlers with rate limiting
   const handleSendEmailOTP = async () => {
     const email = form.getValues("email");
-    if (!email) return;
+    if (!email || !isValidEmail(email)) {
+      toast({ title: "Enter the email properly", variant: "destructive" });
+      return;
+    }
+    
+    if (!canSendEmailOTP()) {
+      if (emailBlocked) {
+        toast({ title: "Email OTP blocked for 5 hours due to too many attempts", variant: "destructive" });
+        return;
+      }
+      if (emailOtpSendCount >= 5) {
+        setEmailBlocked(true);
+        setTimeout(() => setEmailBlocked(false), 5 * 60 * 60 * 1000); // 5 hours
+        toast({ title: "Too many OTP attempts. Blocked for 5 hours.", variant: "destructive" });
+        return;
+      }
+      const cooldown = getEmailOTPCooldown();
+      toast({ title: `Please wait ${cooldown} seconds before requesting another OTP`, variant: "destructive" });
+      return;
+    }
     
     try {
       await sendOTP(email, "email");
       setShowEmailOTP(true);
+      setEmailOtpSendCount(prev => prev + 1);
+      setEmailLastSent(new Date());
       toast({ title: "OTP sent to your email" });
     } catch (error) {
       toast({ title: "Failed to send OTP", variant: "destructive" });
@@ -170,11 +280,32 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
   const handleSendPhoneOTP = async () => {
     const phone = form.getValues("phone");
     const countryCode = form.getValues("countryCode");
-    if (!phone) return;
+    if (!phone || !getPhoneValidation(countryCode, phone)) {
+      toast({ title: "Enter the phone number properly", variant: "destructive" });
+      return;
+    }
+    
+    if (!canSendPhoneOTP()) {
+      if (phoneBlocked) {
+        toast({ title: "Phone OTP blocked for 5 hours due to too many attempts", variant: "destructive" });
+        return;
+      }
+      if (phoneOtpSendCount >= 5) {
+        setPhoneBlocked(true);
+        setTimeout(() => setPhoneBlocked(false), 5 * 60 * 60 * 1000); // 5 hours
+        toast({ title: "Too many OTP attempts. Blocked for 5 hours.", variant: "destructive" });
+        return;
+      }
+      const cooldown = getPhoneOTPCooldown();
+      toast({ title: `Please wait ${cooldown} seconds before requesting another OTP`, variant: "destructive" });
+      return;
+    }
     
     try {
       await sendOTP(`${countryCode}${phone}`, "phone");
       setShowPhoneOTP(true);
+      setPhoneOtpSendCount(prev => prev + 1);
+      setPhoneLastSent(new Date());
       toast({ title: "OTP sent to your phone" });
     } catch (error) {
       toast({ title: "Failed to send OTP", variant: "destructive" });
@@ -406,12 +537,13 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
                     />
                     <div className="absolute inset-y-0 right-0 pr-3 flex items-center space-x-2">
                       {emailStatus === "checking" && <Loader2 className="h-4 w-4 animate-spin text-slate-400" />}
-                      {emailStatus === "available" && !emailVerified && (
+                      {!emailVerified && emailStatus !== "checking" && (
                         <Button
                           type="button"
                           size="sm"
                           onClick={handleSendEmailOTP}
                           className="h-6 px-2 text-xs"
+                          disabled={!field.value || emailStatus === "taken"}
                         >
                           Verify
                         </Button>
@@ -422,6 +554,9 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
                 </FormControl>
                 {emailStatus === "taken" && (
                   <p className="text-xs text-red-600">Email is already registered</p>
+                )}
+                {emailStatus === "invalid" && (
+                  <p className="text-xs text-red-600">Enter the email properly</p>
                 )}
                 <FormMessage />
               </FormItem>
