@@ -186,7 +186,7 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
     }
   };
 
-  const handlePhoneChange = (phone: string) => {
+  const handlePhoneChange = async (phone: string) => {
     form.setValue("phone", phone);
     const countryCode = form.getValues("countryCode");
     
@@ -195,10 +195,25 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
       return;
     }
     
-    if (getPhoneValidation(countryCode, phone)) {
-      setPhoneStatus("valid");
-    } else {
+    if (!getPhoneValidation(countryCode, phone)) {
       setPhoneStatus("invalid");
+      return;
+    }
+    
+    // Check if phone number is already registered
+    setPhoneStatus("checking");
+    try {
+      const result = await validateField("phone", `${countryCode}${phone}`);
+      if (result.available) {
+        setPhoneStatus("valid");
+      } else {
+        setPhoneStatus("taken");
+        // Reset phone verification state if phone is already taken
+        setPhoneVerified(false);
+        setShowPhoneOTP(false);
+      }
+    } catch (error) {
+      setPhoneStatus("valid"); // Fallback to valid if validation fails
     }
   };
 
@@ -667,15 +682,16 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
                         className="pr-20"
                       />
                       <div className="absolute inset-y-0 right-0 pr-3 flex items-center space-x-2">
+                        {phoneStatus === "checking" && <Loader2 className="h-4 w-4 animate-spin text-slate-400" />}
                         {phoneStatus === "valid" && !phoneVerified && <Check className="h-4 w-4 text-green-500" />}
                         {phoneStatus === "invalid" && <X className="h-4 w-4 text-red-500" />}
-                        {!phoneVerified && (
+                        {!phoneVerified && phoneStatus !== "checking" && phoneStatus === "valid" && (
                           <Button
                             type="button"
                             size="sm"
                             onClick={handleSendPhoneOTP}
                             className="h-6 px-2 text-xs"
-                            disabled={!field.value || phoneStatus === "invalid"}
+                            disabled={!field.value || phoneStatus !== "valid"}
                           >
                             Verify
                           </Button>
@@ -705,6 +721,9 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
                 </div>
                 {phoneStatus === "invalid" && (
                   <p className="text-xs text-red-600">Enter the phone number properly</p>
+                )}
+                {phoneStatus === "taken" && (
+                  <p className="text-xs text-red-600">Phone number is already registered</p>
                 )}
                 <FormMessage />
               </FormItem>

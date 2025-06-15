@@ -22,10 +22,10 @@ UnifyDesk is a comprehensive business management platform that serves as an e-co
 - **File Structure**: Monorepo with shared schema between client and server
 
 ### Database Layer
-- **Primary Database**: PostgreSQL with Drizzle ORM
-- **Fallback Storage**: In-memory storage for development
-- **Alternative**: MongoDB support (legacy/backup option)
+- **Primary Database**: PostgreSQL with Drizzle ORM (Active)
 - **Schema Management**: Drizzle Kit for migrations and schema management
+- **Database Tables**: Users, Sessions, OTP Attempts, Role Data
+- **Connection**: Neon serverless PostgreSQL with connection pooling
 
 ## Key Components
 

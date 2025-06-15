@@ -323,4 +323,4 @@ export class DatabaseStorage implements IStorage {
   }
 }
 
-export { storage } from './storage-mongo';
+export const storage = new DatabaseStorage();
