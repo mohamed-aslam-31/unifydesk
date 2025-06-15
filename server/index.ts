@@ -1,7 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
-import { connectToDatabase } from "./db";
+import { connectToDatabase } from "./database";
 
 const app = express();
 app.use(express.json());
@@ -38,11 +38,13 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Try to connect to PostgreSQL database, fallback to in-memory storage if unavailable
+  // Connect to MongoDB database
   try {
     await connectToDatabase();
+    console.log("Connected to MongoDB database");
   } catch (error) {
-    console.log("PostgreSQL unavailable, continuing with in-memory storage");
+    console.error("MongoDB connection error:", error);
+    console.log("Continuing with fallback storage");
   }
   
   const server = await registerRoutes(app);
