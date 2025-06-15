@@ -18,29 +18,7 @@ export function SignupWizard({ onComplete }: SignupWizardProps) {
   const [sessionToken, setSessionToken] = useState<string>("");
   const [user, setUser] = useState<any>(null);
   const [selectedRole, setSelectedRole] = useState<string>("");
-  const [timeLeft, setTimeLeft] = useState(60 * 60); // 60 minutes in seconds
   const [, setLocation] = useLocation();
-
-  // Session timer
-  useEffect(() => {
-    if (timeLeft <= 0) {
-      // Session expired
-      setLocation("/signup");
-      return;
-    }
-
-    const timer = setInterval(() => {
-      setTimeLeft(prev => prev - 1);
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [timeLeft, setLocation]);
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
 
   const getStepNumber = () => {
     switch (currentStep) {
@@ -154,9 +132,6 @@ export function SignupWizard({ onComplete }: SignupWizardProps) {
             <div className="text-center">
               <p className="text-sm text-slate-600 dark:text-slate-400">
                 Step {getStepNumber()} of 3 - {getStepLabel()}
-              </p>
-              <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">
-                Session expires in {formatTime(timeLeft)}
               </p>
             </div>
           </div>

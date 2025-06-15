@@ -28,7 +28,7 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [usernameStatus, setUsernameStatus] = useState<"idle" | "checking" | "available" | "taken">("idle");
   const [emailStatus, setEmailStatus] = useState<"idle" | "checking" | "available" | "taken" | "invalid">("idle");
-  const [phoneStatus, setPhoneStatus] = useState<"idle" | "checking" | "valid" | "invalid">("idle");
+  const [phoneStatus, setPhoneStatus] = useState<"idle" | "checking" | "valid" | "invalid" | "taken">("idle");
   const [showEmailOTP, setShowEmailOTP] = useState(false);
   const [showPhoneOTP, setShowPhoneOTP] = useState(false);
   const [emailVerified, setEmailVerified] = useState(false);
@@ -153,7 +153,14 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
     setEmailStatus("checking");
     try {
       const result = await validateField("email", email);
-      setEmailStatus(result.available ? "available" : "taken");
+      if (result.available) {
+        setEmailStatus("available");
+      } else {
+        setEmailStatus("taken");
+        // Reset email verification state if email is already taken
+        setEmailVerified(false);
+        setShowEmailOTP(false);
+      }
     } catch (error) {
       setEmailStatus("idle");
     }
@@ -569,13 +576,13 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
                     />
                     <div className="absolute inset-y-0 right-0 pr-3 flex items-center space-x-2">
                       {emailStatus === "checking" && <Loader2 className="h-4 w-4 animate-spin text-slate-400" />}
-                      {!emailVerified && emailStatus !== "checking" && (
+                      {!emailVerified && emailStatus !== "checking" && emailStatus === "available" && (
                         <Button
                           type="button"
                           size="sm"
                           onClick={handleSendEmailOTP}
                           className="h-6 px-2 text-xs"
-                          disabled={!field.value || emailStatus === "taken"}
+                          disabled={!field.value || emailStatus !== "available"}
                         >
                           Verify
                         </Button>
