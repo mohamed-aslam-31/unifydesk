@@ -36,8 +36,13 @@ export class MongoStorage implements IStorage {
   private currentUserId: number = 1;
 
   async getUser(id: number): Promise<User | undefined> {
-    const user = await UserModel.findOne({ id }).exec();
-    return user ? this.convertUserDocument(user) : undefined;
+    try {
+      const user = await UserModel.findOne({ id }).exec();
+      return user ? this.convertUserDocument(user) : undefined;
+    } catch (error) {
+      console.error('MongoDB getUser error:', error);
+      return undefined;
+    }
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
@@ -176,13 +181,23 @@ export class MongoStorage implements IStorage {
   }
 
   async isUsernameAvailable(username: string): Promise<boolean> {
-    const user = await UserModel.findOne({ username }).exec();
-    return !user;
+    try {
+      const user = await UserModel.findOne({ username }).exec();
+      return !user;
+    } catch (error) {
+      console.error('MongoDB isUsernameAvailable error:', error);
+      return true; // Default to available if check fails
+    }
   }
 
   async isEmailAvailable(email: string): Promise<boolean> {
-    const user = await UserModel.findOne({ email }).exec();
-    return !user;
+    try {
+      const user = await UserModel.findOne({ email }).exec();
+      return !user;
+    } catch (error) {
+      console.error('MongoDB isEmailAvailable error:', error);
+      return true; // Default to available if check fails
+    }
   }
 
   // Helper methods to convert Mongoose documents to plain objects
