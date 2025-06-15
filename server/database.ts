@@ -5,12 +5,15 @@ const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/unifyd
 export async function connectToDatabase() {
   try {
     if (mongoose.connection.readyState === 0) {
-      await mongoose.connect(MONGODB_URI);
+      await mongoose.connect(MONGODB_URI, {
+        connectTimeoutMS: 5000,
+        serverSelectionTimeoutMS: 5000,
+      });
       console.log('Connected to MongoDB');
     }
   } catch (error) {
     console.error('MongoDB connection error:', error);
-    throw error;
+    // Don't throw error to allow app to start with fallback storage
   }
 }
 

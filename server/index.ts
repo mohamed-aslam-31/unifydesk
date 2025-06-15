@@ -41,10 +41,9 @@ app.use((req, res, next) => {
   // Connect to MongoDB database
   try {
     await connectToDatabase();
-    console.log("Connected to MongoDB database");
   } catch (error) {
     console.error("MongoDB connection error:", error);
-    console.log("Continuing with fallback storage");
+    console.log("Continuing with MongoDB storage (will retry on first request)");
   }
   
   const server = await registerRoutes(app);
