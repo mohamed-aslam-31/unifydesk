@@ -122,7 +122,9 @@ UnifyDesk is a comprehensive business management platform that serves as an e-co
 
 ## Changelog
 
-- June 15, 2025. Initial setup
+- June 15, 2025: Initial project setup with authentication system
+- June 15, 2025: Added PostgreSQL database integration with Drizzle ORM
+- June 15, 2025: Fixed authentication UI - removed session timer display, improved email/phone verification logic with proper "already registered" detection
 
 ## User Preferences
 
