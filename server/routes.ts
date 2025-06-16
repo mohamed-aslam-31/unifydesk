@@ -217,7 +217,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Signup endpoint
   app.post("/api/auth/signup", async (req, res) => {
     try {
-      const validatedData = signupSchema.parse(req.body);
+      const validatedData = signupSchema.parse(req.body) as Required<z.infer<typeof signupSchema>>;
       
       // Check if user already exists
       const existingUserByEmail = await storage.getUserByEmail(validatedData.email);
@@ -244,10 +244,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         country: validatedData.country,
         state: validatedData.state,
         city: validatedData.city,
-        address: validatedData.address,
+        address: validatedData.address || undefined,
         password: validatedData.password, // TODO: Hash password
-        firebaseUid: undefined,
-        role: undefined,
         profilePicture: undefined,
       });
 
