@@ -259,6 +259,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = signupSchema.parse(req.body) as Required<z.infer<typeof signupSchema>>;
       
+      // Verify CAPTCHA first
+      const captchaValid = await storage.verifyCaptcha(validatedData.captchaSessionId, validatedData.captchaAnswer);
+      if (!captchaValid) {
+        return res.status(400).json({ message: "Invalid CAPTCHA. Please try again." });
+      }
+
+      // Verify terms acceptance
+      if (!validatedData.acceptTerms) {
+        return res.status(400).json({ message: "You must accept the terms and conditions to create an account." });
+      }
+
       // Check if user already exists
       const existingUserByEmail = await storage.getUserByEmail(validatedData.email);
       if (existingUserByEmail) {
@@ -270,7 +281,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Username already taken" });
       }
 
-      // Create user
+      // Create user with encrypted password
       const user = await storage.createUser({
         firstName: validatedData.firstName,
         lastName: validatedData.lastName,
@@ -285,7 +296,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         state: validatedData.state,
         city: validatedData.city,
         address: validatedData.address || undefined,
-        password: validatedData.password, // TODO: Hash password
+        password: validatedData.password, // Will be hashed in storage
         profilePicture: undefined,
       });
 

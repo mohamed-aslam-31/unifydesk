@@ -15,7 +15,7 @@ import { Eye, EyeOff, Check, X, Loader2 } from "lucide-react";
 import { PasswordStrength } from "./password-strength";
 import { OTPInput } from "./otp-input";
 import { TermsModal } from "./terms-modal";
-import { SimpleCaptcha } from "./simple-captcha";
+import { Captcha } from "@/components/ui/captcha";
 import { validateField, sendOTP, verifyOTP, signup, SignupData } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 
@@ -44,6 +44,8 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
   const [termsModalOpen, setTermsModalOpen] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [captchaVerified, setCaptchaVerified] = useState(false);
+  const [captchaSessionId, setCaptchaSessionId] = useState("");
+  const [captchaAnswer, setCaptchaAnswer] = useState("");
   const [countries, setCountries] = useState<any[]>([]);
   const [states, setStates] = useState<any[]>([]);
   const [cities, setCities] = useState<any[]>([]);
@@ -71,6 +73,9 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
       address: "",
       password: "",
       confirmPassword: "",
+      captchaAnswer: "",
+      captchaSessionId: "",
+      acceptTerms: false,
     },
   });
 
@@ -423,6 +428,11 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
       return;
     }
 
+    if (!captchaVerified || !captchaSessionId || !captchaAnswer) {
+      toast({ title: "Please complete the security verification", variant: "destructive" });
+      return;
+    }
+
     if (!termsAccepted) {
       toast({ title: "Please accept the terms and conditions", variant: "destructive" });
       return;
@@ -431,8 +441,10 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
     setIsSubmitting(true);
     try {
       const result = await signup({ 
-        ...data as SignupData, 
-        recaptchaToken: ""
+        ...data as SignupData,
+        captchaSessionId,
+        captchaAnswer,
+        acceptTerms: termsAccepted
       });
       onSuccess(result.sessionToken, result.user);
       toast({ title: "Account created successfully!" });
@@ -945,18 +957,21 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
             />
           </div>
 
-          {/* reCAPTCHA */}
-          <div className="flex justify-center">
-            <div className="bg-slate-100 dark:bg-slate-700 p-4 rounded-lg border border-slate-300 dark:border-slate-600 inline-block">
-              <div className="flex items-center space-x-3">
-                <Checkbox id="recaptcha" />
-                <Label htmlFor="recaptcha" className="text-sm text-slate-700 dark:text-slate-300">
-                  I'm not a robot
-                </Label>
-                <div className="w-4 h-4 bg-slate-400 rounded"></div>
-              </div>
-            </div>
-          </div>
+          {/* Security Verification CAPTCHA */}
+          <Captcha
+            onVerified={(sessionId, answer) => {
+              setCaptchaVerified(true);
+              setCaptchaSessionId(sessionId);
+              setCaptchaAnswer(answer);
+              form.setValue("captchaSessionId", sessionId);
+              form.setValue("captchaAnswer", answer);
+            }}
+            onError={() => {
+              setCaptchaVerified(false);
+              setCaptchaSessionId("");
+              setCaptchaAnswer("");
+            }}
+          />
 
           {/* Terms and Conditions */}
           <div>
