@@ -56,6 +56,17 @@ export const roleData = pgTable('role_data', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
+export const captchas = pgTable('captchas', {
+  id: serial('id').primaryKey(),
+  sessionId: varchar('session_id', { length: 255 }).notNull().unique(),
+  question: text('question').notNull(),
+  answer: varchar('answer', { length: 50 }).notNull(),
+  attempts: integer('attempts').notNull().default(0),
+  solved: boolean('solved').notNull().default(false),
+  expiresAt: timestamp('expires_at').notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
 // Define relations
 export const usersRelations = relations(users, ({ many }) => ({
   sessions: many(sessions),
@@ -85,6 +96,8 @@ export type OtpAttempt = typeof otpAttempts.$inferSelect;
 export type NewOtpAttempt = typeof otpAttempts.$inferInsert;
 export type RoleData = typeof roleData.$inferSelect;
 export type NewRoleData = typeof roleData.$inferInsert;
+export type Captcha = typeof captchas.$inferSelect;
+export type NewCaptcha = typeof captchas.$inferInsert;
 
 // Insert schemas with Drizzle-Zod
 export const insertUserSchema = createInsertSchema(users).omit({
@@ -104,6 +117,11 @@ export const insertOtpAttemptSchema = createInsertSchema(otpAttempts).omit({
 });
 
 export const insertRoleDataSchema = createInsertSchema(roleData).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertCaptchaSchema = createInsertSchema(captchas).omit({
   id: true,
   createdAt: true,
 });
