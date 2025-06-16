@@ -14,10 +14,12 @@ export default function SignupPage() {
     // Handle Google redirect if coming back from OAuth
     const handleGoogleAuth = async () => {
       try {
-        const user = await handleGoogleRedirect();
-        if (user) {
-          // Check if user already exists
-          const response = await fetch("/api/auth/google", {
+        const result = await handleGoogleRedirect();
+        if (result && result.user) {
+          const { user } = result;
+          
+          // Send user data to backend
+          const response = await fetch("/api/auth/firebase", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -25,24 +27,47 @@ export default function SignupPage() {
               email: user.email,
               firstName: user.displayName?.split(" ")[0] || "",
               lastName: user.displayName?.split(" ").slice(1).join(" ") || "",
+              profilePicture: user.photoURL,
             }),
           });
 
           if (response.ok) {
             const data = await response.json();
-            if (data.exists) {
-              setLocation("/login?already=true");
-              return;
+            
+            // Store session token
+            localStorage.setItem("sessionToken", data.sessionToken);
+            
+            // Check if user already has a role
+            if (data.user.role && data.user.role !== "customer") {
+              toast({
+                title: "Welcome back!",
+                description: "Redirecting to your dashboard...",
+              });
+              setLocation("/home");
+            } else {
+              // New user or customer - redirect to role selection
+              toast({
+                title: "Google account connected",
+                description: "Please select your role to continue",
+              });
+              setLocation("/choose-role");
             }
-            // Continue with signup flow
+          } else {
+            const errorData = await response.json();
             toast({
-              title: "Google account connected",
-              description: "Please complete your profile information",
+              title: "Authentication failed",
+              description: errorData.message || "Please try again",
+              variant: "destructive",
             });
           }
         }
       } catch (error) {
         console.error("Google auth error:", error);
+        toast({
+          title: "Authentication error",
+          description: "Please try signing in again",
+          variant: "destructive",
+        });
       }
     };
 

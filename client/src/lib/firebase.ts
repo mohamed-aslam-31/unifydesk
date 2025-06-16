@@ -1,4 +1,4 @@
-import { initializeApp } from "firebase/app";
+import { initializeApp, getApp } from "firebase/app";
 import { getAuth, signInWithRedirect, GoogleAuthProvider, getRedirectResult, onAuthStateChanged, signOut } from "firebase/auth";
 
 const firebaseConfig = {
@@ -19,50 +19,68 @@ console.log('Firebase Config:', {
   appId: firebaseConfig.appId ? 'Set' : 'Missing'
 });
 
-// Disable Firebase initialization if environment variables are missing
+// Initialize Firebase
 let app: any = null;
 let auth: any = null;
 let googleProvider: any = null;
 
-try {
-  if (firebaseConfig.apiKey && firebaseConfig.projectId && firebaseConfig.appId) {
-    // Check if app already exists
-    try {
-      app = initializeApp(firebaseConfig);
-    } catch (error: any) {
-      if (error.code === 'app/duplicate-app') {
-        // App already exists, get the existing app
-        const { getApp } = await import('firebase/app');
-        app = getApp();
-      } else {
-        throw error;
+function initializeFirebase() {
+  try {
+    if (firebaseConfig.apiKey && firebaseConfig.projectId && firebaseConfig.appId) {
+      try {
+        app = initializeApp(firebaseConfig);
+      } catch (error: any) {
+        if (error.code === 'app/duplicate-app') {
+          app = getApp();
+        } else {
+          throw error;
+        }
       }
+      
+      auth = getAuth(app);
+      googleProvider = new GoogleAuthProvider();
+      googleProvider.addScope('email');
+      googleProvider.addScope('profile');
+      googleProvider.setCustomParameters({
+        prompt: 'select_account'
+      });
+      console.log('Firebase initialized successfully');
+      return true;
+    } else {
+      console.warn('Firebase environment variables not set. Firebase features disabled.');
+      return false;
     }
-    auth = getAuth(app);
-    googleProvider = new GoogleAuthProvider();
-    googleProvider.addScope('email');
-    googleProvider.addScope('profile');
-    console.log('Firebase initialized successfully');
-  } else {
-    console.warn('Firebase environment variables not set. Firebase features disabled.');
+  } catch (error) {
+    console.error('Firebase initialization failed:', error);
+    return false;
   }
-} catch (error) {
-  console.error('Firebase initialization failed:', error);
 }
+
+// Initialize on module load
+const isFirebaseReady = initializeFirebase();
 
 export { auth, googleProvider };
 
 // Call this function when the user clicks on the "Login" button
 export function signInWithGoogle() {
-  if (!auth || !googleProvider) {
-    throw new Error('Firebase not initialized. Please configure Firebase environment variables.');
+  if (!isFirebaseReady || !auth || !googleProvider) {
+    console.error('Firebase not properly initialized. Please check your Firebase configuration.');
+    throw new Error('Firebase authentication is not available. Please ensure Google sign-in is enabled in your Firebase console.');
   }
+  
   console.log('Initiating Google sign-in...');
   try {
     return signInWithRedirect(auth, googleProvider);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error initiating Google sign-in:', error);
-    throw error;
+    
+    if (error.code === 'auth/operation-not-allowed') {
+      throw new Error('Google sign-in is not enabled. Please enable Google authentication in your Firebase console under Authentication > Sign-in method.');
+    } else if (error.code === 'auth/unauthorized-domain') {
+      throw new Error('This domain is not authorized for Google sign-in. Please add your domain to the authorized domains list in Firebase console.');
+    } else {
+      throw new Error(`Google sign-in failed: ${error.message}`);
+    }
   }
 }
 
