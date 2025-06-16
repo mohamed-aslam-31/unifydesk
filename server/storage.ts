@@ -1,6 +1,7 @@
-import { type User, type InsertUser, type Session, type InsertSession, type OtpAttempt, type InsertOtpAttempt, type RoleData, type InsertRoleData, users, sessions, otpAttempts, roleData } from "@shared/schema";
+import { type User, type InsertUser, type Session, type InsertSession, type OtpAttempt, type InsertOtpAttempt, type RoleData, type InsertRoleData, type Captcha, type InsertCaptcha, users, sessions, otpAttempts, roleData, captchas } from "@shared/schema";
 import { db } from "./db";
-import { eq, and } from "drizzle-orm";
+import { eq, and, lt } from "drizzle-orm";
+import bcrypt from "bcryptjs";
 
 export interface IStorage {
   // User methods
@@ -28,6 +29,12 @@ export interface IStorage {
   isUsernameAvailable(username: string): Promise<boolean>;
   isEmailAvailable(email: string): Promise<boolean>;
   isPhoneAvailable(phone: string, countryCode: string): Promise<boolean>;
+
+  // CAPTCHA methods
+  createCaptcha(captcha: InsertCaptcha): Promise<Captcha>;
+  getCaptcha(sessionId: string): Promise<Captcha | undefined>;
+  verifyCaptcha(sessionId: string, answer: string): Promise<boolean>;
+  cleanupExpiredCaptchas(): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -35,20 +42,24 @@ export class MemStorage implements IStorage {
   private sessions: Map<string, Session>;
   private otpAttempts: Map<string, OtpAttempt>;
   private roleData: Map<number, RoleData>;
+  private captchas: Map<string, Captcha>;
   private currentUserId: number;
   private currentRoleDataId: number;
   private currentOtpId: number;
   private currentSessionId: number;
+  private currentCaptchaId: number;
 
   constructor() {
     this.users = new Map();
     this.sessions = new Map();
     this.otpAttempts = new Map();
     this.roleData = new Map();
+    this.captchas = new Map();
     this.currentUserId = 1;
     this.currentRoleDataId = 1;
     this.currentOtpId = 1;
     this.currentSessionId = 1;
+    this.currentCaptchaId = 1;
   }
 
   async getUser(id: number): Promise<User | undefined> {
@@ -84,7 +95,7 @@ export class MemStorage implements IStorage {
       state: insertUser.state,
       city: insertUser.city,
       address: insertUser.address ?? null,
-      password: insertUser.password,
+      password: await bcrypt.hash(insertUser.password, 10),
       firebaseUid: insertUser.firebaseUid ?? null,
       role: insertUser.role ?? null,
       roleStatus: insertUser.roleStatus || "pending",
@@ -199,6 +210,50 @@ export class MemStorage implements IStorage {
     return !Array.from(this.users.values()).some(user => 
       user.phone === phone && user.countryCode === countryCode
     );
+  }
+
+  async createCaptcha(insertCaptcha: InsertCaptcha): Promise<Captcha> {
+    const id = this.currentCaptchaId++;
+    const captcha: Captcha = {
+      ...insertCaptcha,
+      id,
+      createdAt: new Date(),
+    };
+    this.captchas.set(insertCaptcha.sessionId, captcha);
+    return captcha;
+  }
+
+  async getCaptcha(sessionId: string): Promise<Captcha | undefined> {
+    return this.captchas.get(sessionId);
+  }
+
+  async verifyCaptcha(sessionId: string, answer: string): Promise<boolean> {
+    const captcha = this.captchas.get(sessionId);
+    if (!captcha || captcha.solved || new Date() > captcha.expiresAt) {
+      return false;
+    }
+
+    captcha.attempts++;
+    
+    if (captcha.answer.toLowerCase() === answer.toLowerCase()) {
+      captcha.solved = true;
+      return true;
+    }
+
+    if (captcha.attempts >= 3) {
+      this.captchas.delete(sessionId);
+    }
+
+    return false;
+  }
+
+  async cleanupExpiredCaptchas(): Promise<void> {
+    const now = new Date();
+    for (const [sessionId, captcha] of this.captchas) {
+      if (now > captcha.expiresAt) {
+        this.captchas.delete(sessionId);
+      }
+    }
   }
 }
 

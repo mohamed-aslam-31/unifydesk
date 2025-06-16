@@ -131,6 +131,7 @@ export type InsertUser = z.infer<typeof insertUserSchema>;
 export type InsertSession = z.infer<typeof insertSessionSchema>;
 export type InsertOtpAttempt = z.infer<typeof insertOtpAttemptSchema>;
 export type InsertRoleData = z.infer<typeof insertRoleDataSchema>;
+export type InsertCaptcha = z.infer<typeof insertCaptchaSchema>;
 
 // Validation schemas
 export const signupSchema = z.object({
@@ -171,6 +172,11 @@ export const signupSchema = z.object({
     .regex(/[0-9]/, "Password must contain at least one number")
     .regex(/[!@#$%^&*(),.?":{}|<>]/, "Password must contain at least one special character"),
   confirmPassword: z.string().min(1, "Enter the confirm password"),
+  captchaAnswer: z.string().min(1, "Please solve the CAPTCHA"),
+  captchaSessionId: z.string().min(1, "CAPTCHA session required"),
+  acceptTerms: z.boolean().refine(val => val === true, {
+    message: "You must accept the terms and conditions"
+  })
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
