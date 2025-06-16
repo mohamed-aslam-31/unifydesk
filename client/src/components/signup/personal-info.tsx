@@ -142,6 +142,13 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
   const handleEmailChange = async (email: string) => {
     form.setValue("email", email);
     
+    // If email changed from last verified, reset verification
+    if (lastVerifiedEmail && email !== lastVerifiedEmail) {
+      setEmailVerified(false);
+      setShowEmailOTP(false);
+      setLastVerifiedEmail("");
+    }
+    
     if (!email) {
       setEmailStatus("idle");
       return;
@@ -192,6 +199,13 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
     form.setValue("phone", phone);
     const countryCode = form.getValues("countryCode");
     
+    // If phone changed from last verified, reset verification
+    if (lastVerifiedPhone && phone !== lastVerifiedPhone) {
+      setPhoneVerified(false);
+      setShowPhoneOTP(false);
+      setLastVerifiedPhone("");
+    }
+    
     if (!phone) {
       setPhoneStatus("idle");
       return;
@@ -205,8 +219,14 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
     // Check if phone number is already registered
     setPhoneStatus("checking");
     try {
-      const result = await validateField("phone", `${countryCode}${phone}`);
-      if (result.available) {
+      const result = await fetch("/api/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ field: "phone", value: phone, countryCode })
+      });
+      const data = await result.json();
+      
+      if (data.available) {
         setPhoneStatus("valid");
       } else {
         setPhoneStatus("taken");
@@ -374,6 +394,7 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
       await verifyOTP(email, "email", otp);
       setEmailVerified(true);
       setShowEmailOTP(false);
+      setLastVerifiedEmail(email);
       toast({ title: "Email verified successfully" });
     } catch (error) {
       toast({ title: "Invalid OTP", variant: "destructive" });
@@ -387,6 +408,7 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
       await verifyOTP(`${countryCode}${phone}`, "phone", otp);
       setPhoneVerified(true);
       setShowPhoneOTP(false);
+      setLastVerifiedPhone(phone);
       toast({ title: "Phone verified successfully" });
     } catch (error) {
       toast({ title: "Invalid OTP", variant: "destructive" });
