@@ -82,7 +82,7 @@ export function SignupWizard({ onComplete }: SignupWizardProps) {
       {/* Progress Bar */}
       {currentStep !== "complete" && (
         <div className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 py-6">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-center mb-4">
               <div className="flex items-center space-x-4">
                 {/* Step 1 */}
@@ -139,62 +139,64 @@ export function SignupWizard({ onComplete }: SignupWizardProps) {
       )}
 
       {/* Step Content */}
-      <div className="py-8">
-        {currentStep === "personal" && (
-          <PersonalInfo onSuccess={handlePersonalInfoSuccess} />
-        )}
-        
-        {currentStep === "role" && user && (
-          <RoleSelection user={user} onRoleSelect={handleRoleSelect} />
-        )}
-        
-        {currentStep === "admin" && (
-          <AdminForm 
-            sessionToken={sessionToken} 
-            onSuccess={handleRoleFormSuccess}
-            onBack={handleBackToRole}
-          />
-        )}
-        
-        {currentStep === "employee" && (
-          <EmployeeForm 
-            sessionToken={sessionToken} 
-            onSuccess={handleRoleFormSuccess}
-            onBack={handleBackToRole}
-          />
-        )}
-        
-        {currentStep === "shopkeeper" && (
-          <ShopkeeperForm 
-            sessionToken={sessionToken} 
-            onSuccess={handleRoleFormSuccess}
-            onBack={handleBackToRole}
-          />
-        )}
-        
-        {currentStep === "complete" && (
-          <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-8">
-              <div className="w-16 h-16 bg-green-100 dark:bg-green-900/20 rounded-full mx-auto mb-4 flex items-center justify-center">
-                <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
+      <div className="py-8 flex items-center justify-center">
+        <div className="w-full max-w-2xl px-4">
+          {currentStep === "personal" && (
+            <PersonalInfo onSuccess={handlePersonalInfoSuccess} />
+          )}
+          
+          {currentStep === "role" && user && (
+            <RoleSelection user={user} onRoleSelect={handleRoleSelect} />
+          )}
+          
+          {currentStep === "admin" && (
+            <AdminForm 
+              sessionToken={sessionToken} 
+              onSuccess={handleRoleFormSuccess}
+              onBack={handleBackToRole}
+            />
+          )}
+          
+          {currentStep === "employee" && (
+            <EmployeeForm 
+              sessionToken={sessionToken} 
+              onSuccess={handleRoleFormSuccess}
+              onBack={handleBackToRole}
+            />
+          )}
+          
+          {currentStep === "shopkeeper" && (
+            <ShopkeeperForm 
+              sessionToken={sessionToken} 
+              onSuccess={handleRoleFormSuccess}
+              onBack={handleBackToRole}
+            />
+          )}
+          
+          {currentStep === "complete" && (
+            <div className="text-center">
+              <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-8">
+                <div className="w-16 h-16 bg-green-100 dark:bg-green-900/20 rounded-full mx-auto mb-4 flex items-center justify-center">
+                  <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
+                  Application Submitted!
+                </h2>
+                <p className="text-slate-600 dark:text-slate-400 mb-6">
+                  Your {selectedRole} application has been submitted for review. You'll receive an email once it's processed.
+                </p>
+                <button
+                  onClick={() => setLocation("/login")}
+                  className="px-6 py-3 bg-primary hover:bg-primary/90 text-white font-semibold rounded-lg transition-colors"
+                >
+                  Go to Login
+                </button>
               </div>
-              <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
-                Application Submitted!
-              </h2>
-              <p className="text-slate-600 dark:text-slate-400 mb-6">
-                Your {selectedRole} application has been submitted for review. You'll receive an email once it's processed.
-              </p>
-              <button
-                onClick={() => setLocation("/login")}
-                className="px-6 py-3 bg-primary hover:bg-primary/90 text-white font-semibold rounded-lg transition-colors"
-              >
-                Go to Login
-              </button>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );
