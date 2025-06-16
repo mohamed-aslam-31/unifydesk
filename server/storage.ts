@@ -216,6 +216,8 @@ export class MemStorage implements IStorage {
     const id = this.currentCaptchaId++;
     const captcha: Captcha = {
       ...insertCaptcha,
+      attempts: insertCaptcha.attempts ?? 0,
+      solved: insertCaptcha.solved ?? false,
       id,
       createdAt: new Date(),
     };
@@ -249,7 +251,7 @@ export class MemStorage implements IStorage {
 
   async cleanupExpiredCaptchas(): Promise<void> {
     const now = new Date();
-    for (const [sessionId, captcha] of this.captchas) {
+    for (const [sessionId, captcha] of Array.from(this.captchas.entries())) {
       if (now > captcha.expiresAt) {
         this.captchas.delete(sessionId);
       }
@@ -283,6 +285,7 @@ export class DatabaseStorage implements IStorage {
       .insert(users)
       .values({
         ...insertUser,
+        password: await bcrypt.hash(insertUser.password, 10),
         address: insertUser.address || null,
         isWhatsApp: insertUser.isWhatsApp ?? false
       })
@@ -390,6 +393,62 @@ export class DatabaseStorage implements IStorage {
       .from(users)
       .where(and(eq(users.phone, phone), eq(users.countryCode, countryCode)));
     return !user;
+  }
+
+  async createCaptcha(insertCaptcha: InsertCaptcha): Promise<Captcha> {
+    const [captcha] = await db
+      .insert(captchas)
+      .values({
+        ...insertCaptcha,
+        attempts: insertCaptcha.attempts ?? 0,
+        solved: insertCaptcha.solved ?? false
+      })
+      .returning();
+    return captcha;
+  }
+
+  async getCaptcha(sessionId: string): Promise<Captcha | undefined> {
+    const [captcha] = await db
+      .select()
+      .from(captchas)
+      .where(eq(captchas.sessionId, sessionId));
+    return captcha || undefined;
+  }
+
+  async verifyCaptcha(sessionId: string, answer: string): Promise<boolean> {
+    const [captcha] = await db
+      .select()
+      .from(captchas)
+      .where(eq(captchas.sessionId, sessionId));
+
+    if (!captcha || captcha.solved || new Date() > captcha.expiresAt) {
+      return false;
+    }
+
+    const newAttempts = captcha.attempts + 1;
+    
+    if (captcha.answer.toLowerCase() === answer.toLowerCase()) {
+      await db
+        .update(captchas)
+        .set({ attempts: newAttempts, solved: true })
+        .where(eq(captchas.sessionId, sessionId));
+      return true;
+    }
+
+    if (newAttempts >= 3) {
+      await db.delete(captchas).where(eq(captchas.sessionId, sessionId));
+    } else {
+      await db
+        .update(captchas)
+        .set({ attempts: newAttempts })
+        .where(eq(captchas.sessionId, sessionId));
+    }
+
+    return false;
+  }
+
+  async cleanupExpiredCaptchas(): Promise<void> {
+    await db.delete(captchas).where(lt(captchas.expiresAt, new Date()));
   }
 }
 

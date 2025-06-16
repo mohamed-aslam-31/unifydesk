@@ -4,14 +4,51 @@ import { storage } from "./storage";
 import { signupSchema, adminRoleSchema, employeeRoleSchema, shopkeeperRoleSchema } from "@shared/schema";
 import { z } from "zod";
 import crypto from "crypto";
-import { verifyRecaptcha } from "./recaptcha";
+import bcrypt from "bcryptjs";
+import { captchaService } from "./captcha-service";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // reCAPTCHA configuration endpoint
-  app.get("/api/recaptcha-config", (req, res) => {
-    res.json({
-      siteKey: process.env.RECAPTCHA_SITE_KEY
-    });
+  // CAPTCHA generation endpoint
+  app.get("/api/captcha/generate", async (req, res) => {
+    try {
+      const { question, answer, sessionId } = captchaService.generateCaptcha();
+      
+      // Store CAPTCHA in database with 10 minute expiration
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+      await storage.createCaptcha({
+        sessionId,
+        question,
+        answer,
+        expiresAt,
+        attempts: 0,
+        solved: false
+      });
+
+      res.json({
+        question,
+        sessionId
+      });
+    } catch (error) {
+      console.error("CAPTCHA generation error:", error);
+      res.status(500).json({ message: "Failed to generate CAPTCHA" });
+    }
+  });
+
+  // CAPTCHA verification endpoint
+  app.post("/api/captcha/verify", async (req, res) => {
+    try {
+      const { sessionId, answer } = req.body;
+      
+      if (!sessionId || !answer) {
+        return res.status(400).json({ message: "Session ID and answer are required" });
+      }
+
+      const isValid = await storage.verifyCaptcha(sessionId, answer);
+      res.json({ valid: isValid });
+    } catch (error) {
+      console.error("CAPTCHA verification error:", error);
+      res.status(500).json({ message: "Failed to verify CAPTCHA" });
+    }
   });
 
   // Firebase configuration endpoint
