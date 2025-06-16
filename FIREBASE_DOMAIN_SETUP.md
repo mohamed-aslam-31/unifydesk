@@ -20,14 +20,14 @@
 1. In Authentication, go to **Settings** tab
 2. Scroll to **Authorized domains** section
 3. Click **Add domain** button
-4. Add these domains one by one:
+4. Add these domains one by one (with https:// prefix):
 
 ```
-6158eeaa-17ea-4440-8d3c-f07d002be90c-00-3swof82cdnvnw.spock.replit.dev
-replit.dev
-*.replit.dev
-unifyde.firebaseapp.com
-localhost
+https://6158eeaa-17ea-4440-8d3c-f07d002be90c-00-3swof82cdnvnw.spock.replit.dev
+https://replit.dev
+https://*.replit.dev
+https://unifyde.firebaseapp.com
+http://localhost
 ```
 
 ### 3. OAuth Redirect URIs
