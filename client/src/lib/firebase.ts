@@ -2,13 +2,12 @@ import { initializeApp, getApp } from "firebase/app";
 import { getAuth, signInWithRedirect, GoogleAuthProvider, getRedirectResult, onAuthStateChanged, signOut } from "firebase/auth";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyAzcULUZqEfEvYlIDSbJbzZiYkrGfztDz8",
-  authDomain: "unifyde.firebaseapp.com",
-  projectId: "unifyde",
-  storageBucket: "unifyde.firebasestorage.app",
-  messagingSenderId: "581017052354",
-  appId: "1:581017052354:web:8b8f8f8f8f8f8f8f8f8f8f",
-  measurementId: "G-5CRSC5N2M0"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
 console.log('Firebase Config:', {
