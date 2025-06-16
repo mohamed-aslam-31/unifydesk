@@ -105,7 +105,40 @@ export async function handleGoogleRedirect() {
       // The signed-in user info.
       const user = result.user;
       console.log('Google redirect successful:', user.email);
-      return { user, token };
+      
+      // Send user data to our server for authentication
+      try {
+        const response = await fetch('/api/auth/google', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            firebaseToken: token,
+            userInfo: {
+              uid: user.uid,
+              email: user.email,
+              displayName: user.displayName,
+              photoURL: user.photoURL
+            }
+          })
+        });
+
+        const data = await response.json();
+        
+        if (response.ok) {
+          // Store session token
+          localStorage.setItem('sessionToken', data.sessionToken);
+          localStorage.setItem('user', JSON.stringify(data.user));
+          console.log('Google authentication completed successfully');
+          return { user: data.user, sessionToken: data.sessionToken };
+        } else {
+          throw new Error(data.message || 'Authentication failed');
+        }
+      } catch (serverError: any) {
+        console.error('Server authentication failed:', serverError);
+        throw new Error(`Authentication failed: ${serverError.message}`);
+      }
     }
     return null;
   } catch (error: any) {

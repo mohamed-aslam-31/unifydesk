@@ -273,6 +273,85 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Firebase Google authentication endpoint
+  app.post("/api/auth/google", async (req, res) => {
+    try {
+      const { firebaseToken, userInfo } = req.body;
+      
+      if (!firebaseToken || !userInfo) {
+        return res.status(400).json({ message: "Firebase token and user info required" });
+      }
+
+      const { uid: firebaseUid, email, displayName, photoURL } = userInfo;
+      const [firstName, ...lastNameParts] = (displayName || "").split(" ");
+      const lastName = lastNameParts.join(" ");
+
+      // Check if user exists by Firebase UID
+      let user = await storage.getUserByFirebaseUid(firebaseUid);
+      
+      if (!user) {
+        // Check if user exists by email
+        user = await storage.getUserByEmail(email);
+        
+        if (user) {
+          // Link existing account with Firebase
+          user = await storage.updateUser(user.id!, { 
+            firebaseUid, 
+            profilePicture: photoURL || undefined 
+          });
+        } else {
+          // Create new user
+          user = await storage.createUser({
+            firstName: firstName || "User",
+            lastName: lastName || "",
+            username: email.split("@")[0] + "_" + Date.now(),
+            email,
+            phone: "",
+            countryCode: "",
+            isWhatsApp: false,
+            gender: "",
+            dateOfBirth: "",
+            country: "",
+            state: "",
+            city: "",
+            password: "",
+            firebaseUid,
+            profilePicture: photoURL || undefined,
+          });
+        }
+      }
+
+      if (!user) {
+        return res.status(500).json({ message: "Failed to create or update user" });
+      }
+
+      // Create session
+      const sessionToken = crypto.randomBytes(32).toString('hex');
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+      
+      await storage.createSession({
+        userId: user.id!,
+        sessionToken,
+        expiresAt,
+      });
+
+      res.json({ 
+        message: "Google authentication successful",
+        sessionToken,
+        user: {
+          id: user.id,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email,
+          role: user.role
+        }
+      });
+    } catch (error) {
+      console.error("Google authentication error:", error);
+      res.status(500).json({ message: "Authentication failed" });
+    }
+  });
+
   // Role data endpoints
   app.post("/api/roles/admin", async (req, res) => {
     try {
