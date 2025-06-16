@@ -116,9 +116,19 @@ export type InsertRoleData = z.infer<typeof insertRoleDataSchema>;
 
 // Validation schemas
 export const signupSchema = z.object({
-  firstName: z.string().min(1, "Enter your First Name").min(2, "First name must be at least 2 characters"),
-  lastName: z.string().min(1, "Enter your Last Name").min(2, "Last name must be at least 2 characters"),
-  username: z.string().min(1, "Enter your Username").min(3, "Username must be at least 3 characters").regex(/^[a-zA-Z0-9_]+$/, "Username can only contain letters, numbers, and underscores"),
+  firstName: z.string()
+    .min(1, "Enter your First Name")
+    .max(15, "First name must not exceed 15 characters")
+    .regex(/^[a-zA-Z]+$/, "First name can only contain letters"),
+  lastName: z.string()
+    .min(1, "Enter your Last Name")
+    .max(15, "Last name must not exceed 15 characters")
+    .regex(/^[a-zA-Z]+$/, "Last name can only contain letters"),
+  username: z.string()
+    .min(1, "Enter your Username")
+    .min(3, "Username must be at least 3 characters")
+    .max(10, "Username must not exceed 10 characters")
+    .regex(/^[a-zA-Z0-9_!@#$%^&*(),.?":{}|<>-]+$/, "Username cannot contain spaces"),
   email: z.string().min(1, "Enter Your Email").email("Enter a valid email address"),
   phone: z.string().min(1, "Enter your phone number").min(10, "Phone number must be at least 10 digits"),
   countryCode: z.string().min(1, "Country code is required"),

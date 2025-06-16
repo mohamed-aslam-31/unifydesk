@@ -27,6 +27,7 @@ export interface IStorage {
   // Validation methods
   isUsernameAvailable(username: string): Promise<boolean>;
   isEmailAvailable(email: string): Promise<boolean>;
+  isPhoneAvailable(phone: string, countryCode: string): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
@@ -193,6 +194,12 @@ export class MemStorage implements IStorage {
   async isEmailAvailable(email: string): Promise<boolean> {
     return !Array.from(this.users.values()).some(user => user.email === email);
   }
+
+  async isPhoneAvailable(phone: string, countryCode: string): Promise<boolean> {
+    return !Array.from(this.users.values()).some(user => 
+      user.phone === phone && user.countryCode === countryCode
+    );
+  }
 }
 
 export class DatabaseStorage implements IStorage {
@@ -319,6 +326,14 @@ export class DatabaseStorage implements IStorage {
       .select({ id: users.id })
       .from(users)
       .where(eq(users.email, email));
+    return !user;
+  }
+
+  async isPhoneAvailable(phone: string, countryCode: string): Promise<boolean> {
+    const [user] = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(and(eq(users.phone, phone), eq(users.countryCode, countryCode)));
     return !user;
   }
 }

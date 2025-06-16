@@ -15,10 +15,9 @@ import { Eye, EyeOff, Check, X, Loader2 } from "lucide-react";
 import { PasswordStrength } from "./password-strength";
 import { OTPInput } from "./otp-input";
 import { TermsModal } from "./terms-modal";
+import { SimpleCaptcha } from "./simple-captcha";
 import { validateField, sendOTP, verifyOTP, signup, SignupData } from "@/lib/auth";
-// Firebase import removed - requires API keys
 import { useToast } from "@/hooks/use-toast";
-// reCAPTCHA hook removed - requires site key
 
 interface PersonalInfoProps {
   onSuccess: (sessionToken: string, user: any) => void;
@@ -44,10 +43,13 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
   const [phoneCountdown, setPhoneCountdown] = useState(0);
   const [termsModalOpen, setTermsModalOpen] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [captchaVerified, setCaptchaVerified] = useState(false);
   const [countries, setCountries] = useState<any[]>([]);
   const [states, setStates] = useState<any[]>([]);
   const [cities, setCities] = useState<any[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [lastVerifiedEmail, setLastVerifiedEmail] = useState("");
+  const [lastVerifiedPhone, setLastVerifiedPhone] = useState("");
   
   const { toast } = useToast();
 

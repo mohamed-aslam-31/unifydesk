@@ -29,13 +29,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Validation endpoint
   app.post("/api/validate", async (req, res) => {
     try {
-      const { field, value } = req.body;
+      const { field, value, countryCode } = req.body;
       
       if (field === "username") {
         const isAvailable = await storage.isUsernameAvailable(value);
         res.json({ available: isAvailable });
       } else if (field === "email") {
         const isAvailable = await storage.isEmailAvailable(value);
+        res.json({ available: isAvailable });
+      } else if (field === "phone") {
+        const isAvailable = await storage.isPhoneAvailable(value, countryCode);
         res.json({ available: isAvailable });
       } else {
         res.status(400).json({ message: "Invalid field" });
