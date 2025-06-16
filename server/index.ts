@@ -1,7 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
-import { connectToDatabase } from "./database";
+
 
 const app = express();
 app.use(express.json());
@@ -38,23 +38,8 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Start MongoDB and connect to database
-  try {
-    // Start MongoDB service
-    const { spawn } = await import('child_process');
-    const mongoStart = spawn('bash', ['-c', 'mkdir -p /tmp/mongodb-data && mongod --dbpath /tmp/mongodb-data --port 27017 --bind_ip 127.0.0.1 --nojournal --logpath /tmp/mongodb.log --fork --quiet'], {
-      stdio: 'inherit'
-    });
-    
-    // Wait a moment for MongoDB to start
-    await new Promise(resolve => setTimeout(resolve, 3000));
-    
-    await connectToDatabase();
-    console.log("Connected to MongoDB database");
-  } catch (error) {
-    console.error("MongoDB connection error:", error);
-    console.log("Continuing with MongoDB storage (will retry on first request)");
-  }
+  // Using in-memory storage for development
+  console.log("Using in-memory storage");
   
   const server = await registerRoutes(app);
 
