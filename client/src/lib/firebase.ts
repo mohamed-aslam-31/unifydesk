@@ -6,7 +6,9 @@ const firebaseConfig = {
   authDomain: `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.firebaseapp.com`,
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
   storageBucket: `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.firebasestorage.app`,
+  messagingSenderId: "581017052354",
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: "G-5CRSC5N2M0"
 };
 
 console.log('Firebase Config:', {
@@ -24,9 +26,22 @@ let googleProvider: any = null;
 
 try {
   if (firebaseConfig.apiKey && firebaseConfig.projectId && firebaseConfig.appId) {
-    app = initializeApp(firebaseConfig);
+    // Check if app already exists
+    try {
+      app = initializeApp(firebaseConfig);
+    } catch (error: any) {
+      if (error.code === 'app/duplicate-app') {
+        // App already exists, get the existing app
+        const { getApp } = await import('firebase/app');
+        app = getApp();
+      } else {
+        throw error;
+      }
+    }
     auth = getAuth(app);
     googleProvider = new GoogleAuthProvider();
+    googleProvider.addScope('email');
+    googleProvider.addScope('profile');
     console.log('Firebase initialized successfully');
   } else {
     console.warn('Firebase environment variables not set. Firebase features disabled.');
