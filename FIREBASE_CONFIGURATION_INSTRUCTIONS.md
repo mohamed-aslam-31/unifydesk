@@ -27,11 +27,18 @@ Google sign-in shows "auth/operation-not-allowed" error because Google authentic
    ```
 4. Save changes
 
-### Step 3: Verify Configuration
-Your current Replit app domain that needs authorization:
-- Check your browser URL bar for the exact domain
-- It should look like: `[random-id].replit.dev`
-- Add this exact domain to authorized domains if not covered by `*.replit.dev`
+### Step 3: Add Your Exact Domain
+Your current Replit app domain that MUST be added:
+```
+6158eeaa-17ea-4440-8d3c-f07d002be90c-00-3swof82cdnvnw.spock.replit.dev
+```
+
+Add this exact domain to Firebase Console:
+1. Go to **Authentication** → **Settings** → **Authorized domains**
+2. Click **Add domain**
+3. Paste: `6158eeaa-17ea-4440-8d3c-f07d002be90c-00-3swof82cdnvnw.spock.replit.dev`
+4. Also add: `*.replit.dev` (as backup for future domains)
+5. Click **Save**
 
 ## Expected Results After Setup
 - Google sign-in button will work properly
