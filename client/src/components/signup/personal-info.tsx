@@ -10,12 +10,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Eye, EyeOff, Check, X, Loader2 } from "lucide-react";
 import { PasswordStrength } from "./password-strength";
 import { OTPInput } from "./otp-input";
 import { TermsModal } from "./terms-modal";
 import { validateField, sendOTP, verifyOTP, signup, SignupData } from "@/lib/auth";
-import { signInWithGoogle } from "@/lib/firebase";
+// Firebase import removed - requires API keys
 import { useToast } from "@/hooks/use-toast";
 import { useReCaptcha } from "@/hooks/use-recaptcha";
 
@@ -438,11 +439,16 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
   };
 
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-8 transition-all duration-300">
-      <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">Create Your Account</h1>
-        <p className="text-slate-600 dark:text-slate-400">Join UnifyDesk and streamline your business operations</p>
-      </div>
+    <Card className="shadow-xl">
+      <CardHeader className="text-center">
+        <CardTitle className="text-2xl font-bold text-slate-900 dark:text-white">
+          Create Your Account
+        </CardTitle>
+        <p className="text-slate-600 dark:text-slate-400">
+          Join UnifyDesk and streamline your business operations
+        </p>
+      </CardHeader>
+      <CardContent className="space-y-6">
 
       {/* Google Signup Button */}
       <Button
@@ -1006,20 +1012,21 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
         </form>
       </Form>
 
-      <div className="text-center mt-6">
-        <p className="text-sm text-slate-600 dark:text-slate-400">
-          Already have an account?{" "}
-          <a href="/login" className="text-primary hover:text-primary/80 font-medium">
-            Sign in
-          </a>
-        </p>
-      </div>
+        <div className="text-center mt-6">
+          <p className="text-sm text-slate-600 dark:text-slate-400">
+            Already have an account?{" "}
+            <a href="/login" className="text-primary hover:text-primary/80 font-medium">
+              Sign in
+            </a>
+          </p>
+        </div>
 
-      <TermsModal
-        open={termsModalOpen}
-        onOpenChange={setTermsModalOpen}
-        onAccept={() => setTermsAccepted(true)}
-      />
-    </div>
+        <TermsModal
+          open={termsModalOpen}
+          onOpenChange={setTermsModalOpen}
+          onAccept={() => setTermsAccepted(true)}
+        />
+      </CardContent>
+    </Card>
   );
 }
