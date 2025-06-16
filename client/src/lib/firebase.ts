@@ -1,31 +1,37 @@
 import { initializeApp, getApp } from "firebase/app";
 import { getAuth, signInWithRedirect, GoogleAuthProvider, getRedirectResult, onAuthStateChanged, signOut } from "firebase/auth";
 
-const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID
-};
-
-console.log('Firebase Config:', {
-  apiKey: firebaseConfig.apiKey ? 'Set' : 'Missing',
-  authDomain: firebaseConfig.authDomain,
-  projectId: firebaseConfig.projectId,
-  storageBucket: firebaseConfig.storageBucket,
-  appId: firebaseConfig.appId ? 'Set' : 'Missing'
-});
-
 // Initialize Firebase
 let app: any = null;
 let auth: any = null;
 let googleProvider: any = null;
+let firebaseConfig: any = null;
 
-function initializeFirebase() {
+async function fetchFirebaseConfig() {
   try {
-    if (firebaseConfig.apiKey && firebaseConfig.projectId && firebaseConfig.appId) {
+    const response = await fetch('/api/firebase-config');
+    return await response.json();
+  } catch (error) {
+    console.error('Failed to fetch Firebase config:', error);
+    return null;
+  }
+}
+
+async function initializeFirebase() {
+  try {
+    if (!firebaseConfig) {
+      firebaseConfig = await fetchFirebaseConfig();
+    }
+
+    console.log('Firebase Config:', {
+      apiKey: firebaseConfig?.apiKey ? 'Set' : 'Missing',
+      authDomain: firebaseConfig?.authDomain,
+      projectId: firebaseConfig?.projectId,
+      storageBucket: firebaseConfig?.storageBucket,
+      appId: firebaseConfig?.appId ? 'Set' : 'Missing'
+    });
+
+    if (firebaseConfig?.apiKey && firebaseConfig?.projectId && firebaseConfig?.appId) {
       try {
         app = initializeApp(firebaseConfig);
       } catch (error: any) {
@@ -46,7 +52,7 @@ function initializeFirebase() {
       console.log('Firebase initialized successfully');
       return true;
     } else {
-      console.warn('Firebase environment variables not set. Firebase features disabled.');
+      console.log('Firebase initialization skipped - add API keys to enable Google auth');
       return false;
     }
   } catch (error) {
