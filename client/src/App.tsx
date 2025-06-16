@@ -15,19 +15,8 @@ import { handleGoogleRedirect } from "@/lib/firebase";
 
 function Router() {
   useEffect(() => {
-    // Handle Firebase redirect on app initialization
-    const initializeFirebase = async () => {
-      try {
-        const result = await handleGoogleRedirect();
-        if (result) {
-          console.log("Firebase initialized and redirect handled");
-        }
-      } catch (error) {
-        console.warn("Firebase not initialized. Skipping Google redirect handling.");
-      }
-    };
-    
-    initializeFirebase();
+    // Firebase initialization disabled for now - can be enabled when API keys are provided
+    console.log("Firebase initialization skipped - add API keys to enable Google auth");
   }, []);
 
   return (
