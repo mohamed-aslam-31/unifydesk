@@ -17,12 +17,31 @@ console.log('Firebase Config:', {
   appId: firebaseConfig.appId ? 'Set' : 'Missing'
 });
 
-const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
-export const googleProvider = new GoogleAuthProvider();
+// Disable Firebase initialization if environment variables are missing
+let app: any = null;
+let auth: any = null;
+let googleProvider: any = null;
+
+try {
+  if (firebaseConfig.apiKey && firebaseConfig.projectId && firebaseConfig.appId) {
+    app = initializeApp(firebaseConfig);
+    auth = getAuth(app);
+    googleProvider = new GoogleAuthProvider();
+    console.log('Firebase initialized successfully');
+  } else {
+    console.warn('Firebase environment variables not set. Firebase features disabled.');
+  }
+} catch (error) {
+  console.error('Firebase initialization failed:', error);
+}
+
+export { auth, googleProvider };
 
 // Call this function when the user clicks on the "Login" button
 export function signInWithGoogle() {
+  if (!auth || !googleProvider) {
+    throw new Error('Firebase not initialized. Please configure Firebase environment variables.');
+  }
   console.log('Initiating Google sign-in...');
   try {
     return signInWithRedirect(auth, googleProvider);
@@ -34,6 +53,10 @@ export function signInWithGoogle() {
 
 // Call this function on page load when the user is redirected back to your site
 export async function handleGoogleRedirect() {
+  if (!auth) {
+    console.warn('Firebase not initialized. Skipping Google redirect handling.');
+    return null;
+  }
   try {
     const result = await getRedirectResult(auth);
     if (result) {
@@ -68,10 +91,19 @@ export async function handleGoogleRedirect() {
 
 // Sign out function
 export function signOutUser() {
+  if (!auth) {
+    console.warn('Firebase not initialized. Cannot sign out.');
+    return Promise.resolve();
+  }
   return signOut(auth);
 }
 
 // Auth state listener
 export function onAuthStateChange(callback: (user: any) => void) {
+  if (!auth) {
+    console.warn('Firebase not initialized. Auth state monitoring disabled.');
+    callback(null);
+    return () => {}; // Return empty unsubscribe function
+  }
   return onAuthStateChanged(auth, callback);
 }
