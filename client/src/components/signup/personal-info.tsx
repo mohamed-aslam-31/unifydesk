@@ -394,8 +394,13 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
   const handleGoogleSignup = async () => {
     try {
       await signInWithGoogle();
-    } catch (error) {
-      toast({ title: "Google signup failed", variant: "destructive" });
+    } catch (error: any) {
+      console.error("Google signup error:", error);
+      toast({ 
+        title: "Google Authentication Setup Required", 
+        description: error.message || "Please enable Google sign-in in Firebase console",
+        variant: "destructive" 
+      });
     }
   };
 
