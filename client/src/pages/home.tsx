@@ -11,12 +11,7 @@ export default function HomePage() {
   const [, setLocation] = useLocation();
   const { user, isLoading } = useSession();
 
-  useEffect(() => {
-    // If user is not logged in, redirect to signup
-    if (!isLoading && !user) {
-      setLocation("/signup");
-    }
-  }, [user, isLoading, setLocation]);
+  // Remove redirect to allow public access to home page
 
   if (isLoading) {
     return (
