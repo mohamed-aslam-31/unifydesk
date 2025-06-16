@@ -16,7 +16,9 @@ export interface SignupData {
   address?: string;
   password: string;
   confirmPassword: string;
-  recaptchaToken?: string;
+  captchaSessionId: string;
+  captchaAnswer: string;
+  acceptTerms: boolean;
 }
 
 export interface AuthResponse {

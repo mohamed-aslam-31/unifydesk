@@ -64,8 +64,7 @@ export function Captcha({ onVerified, onError, className }: CaptchaProps) {
     },
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = () => {
     if (!captchaData || !answer.trim()) return;
     
     setError(null);
@@ -133,7 +132,7 @@ export function Captcha({ onVerified, onError, className }: CaptchaProps) {
         </CardTitle>
       </CardHeader>
       <CardContent className="pt-0">
-        <form onSubmit={handleSubmit} className="space-y-3">
+        <div className="space-y-3">
           {captchaData && (
             <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded border text-sm font-mono">
               {captchaData.question}
@@ -156,7 +155,8 @@ export function Captcha({ onVerified, onError, className }: CaptchaProps) {
                 autoComplete="off"
               />
               <Button 
-                type="submit" 
+                type="button"
+                onClick={handleSubmit}
                 disabled={!answer.trim() || verifyMutation.isPending}
                 size="sm"
               >
@@ -175,7 +175,7 @@ export function Captcha({ onVerified, onError, className }: CaptchaProps) {
               {error}
             </div>
           )}
-        </form>
+        </div>
       </CardContent>
     </Card>
   );
