@@ -16,7 +16,7 @@ export const users = pgTable('users', {
   city: varchar('city', { length: 100 }).notNull(),
   address: text('address'),
   password: varchar('password', { length: 255 }).notNull(),
-  firebaseUid: varchar('firebase_uid', { length: 128 }),
+
   role: varchar('role', { length: 20 }),
   roleStatus: varchar('role_status', { length: 20 }).default('pending').notNull(),
   emailVerified: boolean('email_verified').default(false).notNull(),

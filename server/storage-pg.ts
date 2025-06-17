@@ -10,7 +10,7 @@ export interface IStorage {
   getUser(id: number): Promise<SharedUser | undefined>;
   getUserByEmail(email: string): Promise<SharedUser | undefined>;
   getUserByUsername(username: string): Promise<SharedUser | undefined>;
-  getUserByFirebaseUid(firebaseUid: string): Promise<SharedUser | undefined>;
+
   createUser(user: InsertUser): Promise<SharedUser>;
   updateUser(id: number, updates: Partial<SharedUser>): Promise<SharedUser | undefined>;
 
@@ -48,10 +48,7 @@ export class PostgreSQLStorage implements IStorage {
     return result[0] ? this.convertUser(result[0]) : undefined;
   }
 
-  async getUserByFirebaseUid(firebaseUid: string): Promise<SharedUser | undefined> {
-    const result = await db.select().from(users).where(eq(users.firebaseUid, firebaseUid)).limit(1);
-    return result[0] ? this.convertUser(result[0]) : undefined;
-  }
+
 
   async createUser(insertUser: InsertUser): Promise<SharedUser> {
     // Hash password
@@ -72,7 +69,7 @@ export class PostgreSQLStorage implements IStorage {
       city: insertUser.city,
       address: insertUser.address,
       password: hashedPassword,
-      firebaseUid: insertUser.firebaseUid,
+
       role: insertUser.role,
       emailVerified: false,
       phoneVerified: false,
@@ -283,7 +280,7 @@ export class PostgreSQLStorage implements IStorage {
       city: user.city,
       address: user.address || undefined,
       password: user.password,
-      firebaseUid: user.firebaseUid || undefined,
+
       role: user.role || undefined,
       roleStatus: user.roleStatus,
       emailVerified: user.emailVerified,

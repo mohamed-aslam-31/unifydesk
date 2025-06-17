@@ -20,7 +20,7 @@ export const users = pgTable('users', {
   city: varchar('city', { length: 100 }).notNull(),
   address: text('address'),
   password: text('password').notNull(),
-  firebaseUid: varchar('firebase_uid', { length: 128 }),
+
   role: varchar('role', { length: 20 }),
   roleStatus: varchar('role_status', { length: 20 }).notNull().default('pending'),
   emailVerified: boolean('email_verified').notNull().default(false),

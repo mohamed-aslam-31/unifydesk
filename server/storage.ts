@@ -6,7 +6,7 @@ export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
-  getUserByFirebaseUid(firebaseUid: string): Promise<User | undefined>;
+
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, updates: Partial<User>): Promise<User | undefined>;
 
@@ -82,14 +82,7 @@ export class MemStorage implements IStorage {
     return undefined;
   }
 
-  async getUserByFirebaseUid(firebaseUid: string): Promise<User | undefined> {
-    for (const user of Array.from(this.users.values())) {
-      if (user.firebaseUid === firebaseUid) {
-        return user;
-      }
-    }
-    return undefined;
-  }
+
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const hashedPassword = insertUser.password ? await bcrypt.hash(insertUser.password, 10) : insertUser.password;
@@ -110,7 +103,7 @@ export class MemStorage implements IStorage {
       city: insertUser.city,
       address: insertUser.address || null,
       password: hashedPassword,
-      firebaseUid: insertUser.firebaseUid || null,
+
       role: insertUser.role || null,
       roleStatus: insertUser.roleStatus || 'pending',
       emailVerified: insertUser.emailVerified ?? false,
