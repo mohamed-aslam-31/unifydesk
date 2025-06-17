@@ -15,7 +15,7 @@ import { Eye, EyeOff, Check, X, Loader2 } from "lucide-react";
 import { PasswordStrength } from "./password-strength";
 import { OTPInput } from "./otp-input";
 import { TermsModal } from "./terms-modal";
-import { Captcha } from "@/components/ui/captcha";
+import { VisualCaptcha } from "@/components/ui/visual-captcha";
 import { validateField, sendOTP, verifyOTP, signup, SignupData } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 
@@ -958,19 +958,21 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
           </div>
 
           {/* Security Verification CAPTCHA */}
-          <Captcha
-            onVerified={(sessionId, answer) => {
-              setCaptchaVerified(true);
-              setCaptchaSessionId(sessionId);
-              setCaptchaAnswer(answer);
-              form.setValue("captchaSessionId", sessionId);
-              form.setValue("captchaAnswer", answer);
+          <VisualCaptcha
+            onVerify={(isValid) => {
+              setCaptchaVerified(isValid);
+              if (isValid) {
+                // For visual captcha, we use a simple validation approach
+                setCaptchaSessionId("visual_captcha_verified");
+                setCaptchaAnswer("verified");
+                form.setValue("captchaSessionId", "visual_captcha_verified");
+                form.setValue("captchaAnswer", "verified");
+              } else {
+                setCaptchaSessionId("");
+                setCaptchaAnswer("");
+              }
             }}
-            onError={() => {
-              setCaptchaVerified(false);
-              setCaptchaSessionId("");
-              setCaptchaAnswer("");
-            }}
+            isVerified={captchaVerified}
           />
 
           {/* Terms and Conditions */}
