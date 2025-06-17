@@ -4,31 +4,43 @@ import { Input } from "@/components/ui/input";
 import { RefreshCw } from "lucide-react";
 
 interface VisualCaptchaProps {
-  onVerify: (isValid: boolean) => void;
-  isVerified: boolean;
+  onVerified: (sessionId: string, answer: string) => void;
+  onError?: (error: string) => void;
   className?: string;
 }
 
-export function VisualCaptcha({ onVerify, isVerified, className }: VisualCaptchaProps) {
+export function VisualCaptcha({ onVerified, onError, className }: VisualCaptchaProps) {
   const [captchaText, setCaptchaText] = useState("");
   const [userInput, setUserInput] = useState("");
   const [error, setError] = useState("");
+  const [sessionId, setSessionId] = useState("");
+  const [verified, setVerified] = useState(false);
+  const [loading, setLoading] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  const generateCaptcha = () => {
-    // Generate random captcha text (mix of letters and numbers)
-    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    let result = "";
-    for (let i = 0; i < 6; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length));
+  const generateCaptcha = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/captcha/generate');
+      const data = await response.json();
+      
+      if (response.ok) {
+        setCaptchaText(data.question);
+        setSessionId(data.sessionId);
+        setUserInput("");
+        setError("");
+        setVerified(false);
+        
+        // Draw captcha on canvas
+        setTimeout(() => drawCaptcha(data.question), 0);
+      } else {
+        setError("Failed to generate CAPTCHA");
+      }
+    } catch (err) {
+      setError("Failed to load CAPTCHA");
+    } finally {
+      setLoading(false);
     }
-    setCaptchaText(result);
-    setUserInput("");
-    setError("");
-    onVerify(false);
-    
-    // Draw captcha on canvas
-    setTimeout(() => drawCaptcha(result), 0);
   };
 
   const drawCaptcha = (text: string) => {
@@ -99,14 +111,37 @@ export function VisualCaptcha({ onVerify, isVerified, className }: VisualCaptcha
     generateCaptcha();
   }, []);
 
-  const handleVerify = () => {
-    if (userInput.toUpperCase() === captchaText.toUpperCase()) {
-      onVerify(true);
-      setError("");
-    } else {
-      onVerify(false);
-      setError("Incorrect captcha. Please try again.");
-      generateCaptcha();
+  const handleVerify = async () => {
+    if (!sessionId || !userInput) {
+      setError("Please enter the CAPTCHA text");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await fetch('/api/captcha/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId, answer: userInput }),
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok && data.valid) {
+        setVerified(true);
+        setError("");
+        onVerified(sessionId, userInput);
+      } else {
+        setError("Incorrect CAPTCHA. Please try again.");
+        setVerified(false);
+        if (onError) onError("Incorrect CAPTCHA");
+        await generateCaptcha(); // Generate new CAPTCHA
+      }
+    } catch (err) {
+      setError("Verification failed. Please try again.");
+      if (onError) onError("Verification failed");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -172,7 +207,7 @@ export function VisualCaptcha({ onVerify, isVerified, className }: VisualCaptcha
         <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
       )}
       
-      {isVerified && (
+      {verified && (
         <p className="text-sm text-green-600 dark:text-green-400">✓ Captcha verified successfully</p>
       )}
     </div>

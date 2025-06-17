@@ -959,20 +959,18 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
 
           {/* Security Verification CAPTCHA */}
           <VisualCaptcha
-            onVerify={(isValid) => {
-              setCaptchaVerified(isValid);
-              if (isValid) {
-                // For visual captcha, we use a simple validation approach
-                setCaptchaSessionId("visual_captcha_verified");
-                setCaptchaAnswer("verified");
-                form.setValue("captchaSessionId", "visual_captcha_verified");
-                form.setValue("captchaAnswer", "verified");
-              } else {
-                setCaptchaSessionId("");
-                setCaptchaAnswer("");
-              }
+            onVerified={(sessionId, answer) => {
+              setCaptchaVerified(true);
+              setCaptchaSessionId(sessionId);
+              setCaptchaAnswer(answer);
+              form.setValue("captchaSessionId", sessionId);
+              form.setValue("captchaAnswer", answer);
             }}
-            isVerified={captchaVerified}
+            onError={() => {
+              setCaptchaVerified(false);
+              setCaptchaSessionId("");
+              setCaptchaAnswer("");
+            }}
           />
 
           {/* Terms and Conditions */}
