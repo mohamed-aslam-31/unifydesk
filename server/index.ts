@@ -38,12 +38,8 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Check if database is available
-  if (process.env.DATABASE_URL) {
-    console.log("Using PostgreSQL database storage");
-  } else {
-    console.log("Using in-memory storage");
-  }
+  // Using in-memory storage for development
+  console.log("Using in-memory storage (data will reset on restart)");
   
   const server = await registerRoutes(app);
 

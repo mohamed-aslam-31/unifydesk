@@ -1,5 +1,8 @@
 import { type User, type InsertUser, type Session, type InsertSession, type OtpAttempt, type InsertOtpAttempt, type RoleData, type InsertRoleData, type Captcha, type InsertCaptcha } from "@shared/schema";
 import bcrypt from "bcryptjs";
+import Database from "@replit/database";
+
+const db = new Database();
 
 export interface IStorage {
   // User methods
@@ -35,67 +38,120 @@ export interface IStorage {
   cleanupExpiredCaptchas(): Promise<void>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<number, User>;
-  private sessions: Map<string, Session>;
-  private otpAttempts: Map<string, OtpAttempt>;
-  private roleData: Map<number, RoleData>;
-  private captchas: Map<string, Captcha>;
-  private currentUserId: number;
-  private currentRoleDataId: number;
-  private currentOtpId: number;
-  private currentSessionId: number;
-  private currentCaptchaId: number;
+export class ReplitStorage implements IStorage {
+  private async getNextId(type: string): Promise<number> {
+    try {
+      const currentId = (await db.get(`${type}_counter`)) || 0;
+      const nextId = currentId + 1;
+      await db.set(`${type}_counter`, nextId);
+      return nextId;
+    } catch (error) {
+      console.error(`Error getting next ID for ${type}:`, error);
+      return 1;
+    }
+  }
 
-  constructor() {
-    this.users = new Map();
-    this.sessions = new Map();
-    this.otpAttempts = new Map();
-    this.roleData = new Map();
-    this.captchas = new Map();
-    this.currentUserId = 1;
-    this.currentRoleDataId = 1;
-    this.currentOtpId = 1;
-    this.currentSessionId = 1;
-    this.currentCaptchaId = 1;
+  private async getAllUsers(): Promise<User[]> {
+    try {
+      const userKeys = await db.list("user:");
+      const users: User[] = [];
+      for (const key of userKeys) {
+        try {
+          const user = await db.get(key);
+          if (user) users.push(user);
+        } catch (error) {
+          console.error(`Error getting user ${key}:`, error);
+        }
+      }
+      return users;
+    } catch (error) {
+      console.error("Error getting all users:", error);
+      return [];
+    }
+  }
+
+  private async getAllSessions(): Promise<Session[]> {
+    try {
+      const sessionKeys = await db.list("session:");
+      const sessions: Session[] = [];
+      for (const key of sessionKeys) {
+        try {
+          const session = await db.get(key);
+          if (session) sessions.push(session);
+        } catch (error) {
+          console.error(`Error getting session ${key}:`, error);
+        }
+      }
+      return sessions;
+    } catch (error) {
+      console.error("Error getting all sessions:", error);
+      return [];
+    }
+  }
+
+  private async getAllRoleData(): Promise<RoleData[]> {
+    try {
+      const roleKeys = await db.list("role_data:");
+      const roleData: RoleData[] = [];
+      for (const key of roleKeys) {
+        try {
+          const data = await db.get(key);
+          if (data) roleData.push(data);
+        } catch (error) {
+          console.error(`Error getting role data ${key}:`, error);
+        }
+      }
+      return roleData;
+    } catch (error) {
+      console.error("Error getting all role data:", error);
+      return [];
+    }
+  }
+
+  private async getAllCaptchas(): Promise<Captcha[]> {
+    try {
+      const captchaKeys = await db.list("captcha:");
+      const captchas: Captcha[] = [];
+      for (const key of captchaKeys) {
+        try {
+          const captcha = await db.get(key);
+          if (captcha) captchas.push(captcha);
+        } catch (error) {
+          console.error(`Error getting captcha ${key}:`, error);
+        }
+      }
+      return captchas;
+    } catch (error) {
+      console.error("Error getting all captchas:", error);
+      return [];
+    }
   }
 
   async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+    return await db.get(`user:${id}`);
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    for (const user of Array.from(this.users.values())) {
-      if (user.email === email) {
-        return user;
-      }
-    }
-    return undefined;
+    const users = await this.getAllUsers();
+    return users.find(user => user.email === email);
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    for (const user of Array.from(this.users.values())) {
-      if (user.username === username) {
-        return user;
-      }
-    }
-    return undefined;
+    const users = await this.getAllUsers();
+    return users.find(user => user.username === username);
   }
 
   async getUserByFirebaseUid(firebaseUid: string): Promise<User | undefined> {
-    for (const user of Array.from(this.users.values())) {
-      if (user.firebaseUid === firebaseUid) {
-        return user;
-      }
-    }
-    return undefined;
+    const users = await this.getAllUsers();
+    return users.find(user => user.firebaseUid === firebaseUid);
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const hashedPassword = insertUser.password ? await bcrypt.hash(insertUser.password, 10) : insertUser.password;
+    const id = await this.getNextId("user");
     
     const user: User = {
-      id: this.currentUserId++,
+      id,
       firstName: insertUser.firstName,
       lastName: insertUser.lastName || null,
       username: insertUser.username,
@@ -120,12 +176,12 @@ export class MemStorage implements IStorage {
       updatedAt: new Date()
     };
     
-    this.users.set(user.id, user);
+    await db.set(`user:${id}`, user);
     return user;
   }
 
   async updateUser(id: number, updates: Partial<User>): Promise<User | undefined> {
-    const user = this.users.get(id);
+    const user = await this.getUser(id);
     if (!user) return undefined;
 
     if (updates.password) {
@@ -133,40 +189,45 @@ export class MemStorage implements IStorage {
     }
 
     const updatedUser = { ...user, ...updates, updatedAt: new Date() };
-    this.users.set(id, updatedUser);
+    await db.set(`user:${id}`, updatedUser);
     return updatedUser;
   }
 
   async createSession(session: InsertSession): Promise<Session> {
+    const id = await this.getNextId("session");
     const sessionData: Session = {
-      id: this.currentSessionId++,
+      id,
       sessionToken: session.sessionToken,
       userId: session.userId,
-      expires: session.expires,
-      createdAt: new Date(),
-      updatedAt: new Date()
+      expiresAt: session.expiresAt,
+      createdAt: new Date()
     };
     
-    this.sessions.set(sessionData.sessionToken, sessionData);
+    await db.set(`session:${session.sessionToken}`, sessionData);
+    await db.set(`session_by_id:${id}`, sessionData);
     return sessionData;
   }
 
   async getSession(sessionToken: string): Promise<Session | undefined> {
-    return this.sessions.get(sessionToken);
+    return await db.get(`session:${sessionToken}`);
   }
 
   async deleteSession(sessionToken: string): Promise<void> {
-    this.sessions.delete(sessionToken);
+    const session = await db.get(`session:${sessionToken}`);
+    if (session) {
+      await db.delete(`session:${sessionToken}`);
+      await db.delete(`session_by_id:${session.id}`);
+    }
   }
 
   async getOtpAttempts(identifier: string, type: string): Promise<OtpAttempt | undefined> {
-    const key = `${identifier}:${type}`;
-    return this.otpAttempts.get(key);
+    const key = `otp:${identifier}:${type}`;
+    return await db.get(key);
   }
 
   async createOrUpdateOtpAttempts(attempt: InsertOtpAttempt): Promise<OtpAttempt> {
-    const key = `${attempt.identifier}:${attempt.type}`;
-    const existing = this.otpAttempts.get(key);
+    const key = `otp:${attempt.identifier}:${attempt.type}`;
+    const existing = await db.get(key);
     
     if (existing) {
       const updated: OtpAttempt = {
@@ -176,12 +237,13 @@ export class MemStorage implements IStorage {
         blockedUntil: attempt.blockedUntil,
         updatedAt: new Date()
       };
-      this.otpAttempts.set(key, updated);
+      await db.set(key, updated);
       return updated;
     }
 
+    const id = await this.getNextId("otp");
     const otpData: OtpAttempt = {
-      id: this.currentOtpId++,
+      id,
       identifier: attempt.identifier,
       type: attempt.type,
       attempts: attempt.attempts,
@@ -191,84 +253,67 @@ export class MemStorage implements IStorage {
       updatedAt: new Date()
     };
     
-    this.otpAttempts.set(key, otpData);
+    await db.set(key, otpData);
     return otpData;
   }
 
   async createRoleData(roleDataInsert: InsertRoleData): Promise<RoleData> {
+    const id = await this.getNextId("role_data");
     const data: RoleData = {
-      id: this.currentRoleDataId++,
+      id,
       userId: roleDataInsert.userId,
       role: roleDataInsert.role,
       data: roleDataInsert.data,
-      createdAt: new Date(),
-      updatedAt: new Date()
+      createdAt: new Date()
     };
     
-    this.roleData.set(data.id, data);
+    await db.set(`role_data:${id}`, data);
     return data;
   }
 
   async getRoleDataByUser(userId: number): Promise<RoleData[]> {
-    const result: RoleData[] = [];
-    for (const data of this.roleData.values()) {
-      if (data.userId === userId) {
-        result.push(data);
-      }
-    }
-    return result;
+    const allRoleData = await this.getAllRoleData();
+    return allRoleData.filter(data => data.userId === userId);
   }
 
   async isUsernameAvailable(username: string): Promise<boolean> {
-    for (const user of this.users.values()) {
-      if (user.username === username) {
-        return false;
-      }
-    }
-    return true;
+    const users = await this.getAllUsers();
+    return !users.some(user => user.username === username);
   }
 
   async isEmailAvailable(email: string): Promise<boolean> {
-    for (const user of this.users.values()) {
-      if (user.email === email) {
-        return false;
-      }
-    }
-    return true;
+    const users = await this.getAllUsers();
+    return !users.some(user => user.email === email);
   }
 
   async isPhoneAvailable(phone: string, countryCode: string): Promise<boolean> {
-    for (const user of this.users.values()) {
-      if (user.phone === phone && user.countryCode === countryCode) {
-        return false;
-      }
-    }
-    return true;
+    const users = await this.getAllUsers();
+    return !users.some(user => user.phone === phone && user.countryCode === countryCode);
   }
 
   async createCaptcha(insertCaptcha: InsertCaptcha): Promise<Captcha> {
+    const id = await this.getNextId("captcha");
     const captcha: Captcha = {
-      id: this.currentCaptchaId++,
+      id,
       sessionId: insertCaptcha.sessionId,
       question: insertCaptcha.question,
       answer: insertCaptcha.answer,
       expiresAt: insertCaptcha.expiresAt,
       attempts: insertCaptcha.attempts ?? 0,
       solved: insertCaptcha.solved ?? false,
-      createdAt: new Date(),
-      updatedAt: new Date()
+      createdAt: new Date()
     };
     
-    this.captchas.set(captcha.sessionId, captcha);
+    await db.set(`captcha:${captcha.sessionId}`, captcha);
     return captcha;
   }
 
   async getCaptcha(sessionId: string): Promise<Captcha | undefined> {
-    return this.captchas.get(sessionId);
+    return await db.get(`captcha:${sessionId}`);
   }
 
   async verifyCaptcha(sessionId: string, answer: string): Promise<boolean> {
-    const captcha = this.captchas.get(sessionId);
+    const captcha = await db.get(`captcha:${sessionId}`);
     if (!captcha || new Date() > captcha.expiresAt) {
       return false;
     }
@@ -283,17 +328,15 @@ export class MemStorage implements IStorage {
     if (captcha.answer.toLowerCase() === answer.toLowerCase()) {
       captcha.attempts = newAttempts;
       captcha.solved = true;
-      captcha.updatedAt = new Date();
-      this.captchas.set(sessionId, captcha);
+      await db.set(`captcha:${sessionId}`, captcha);
       return true;
     }
 
     if (newAttempts >= 3) {
-      this.captchas.delete(sessionId);
+      await db.delete(`captcha:${sessionId}`);
     } else {
       captcha.attempts = newAttempts;
-      captcha.updatedAt = new Date();
-      this.captchas.set(sessionId, captcha);
+      await db.set(`captcha:${sessionId}`, captcha);
     }
 
     return false;
@@ -301,13 +344,14 @@ export class MemStorage implements IStorage {
 
   async cleanupExpiredCaptchas(): Promise<void> {
     const now = new Date();
-    for (const [sessionId, captcha] of Array.from(this.captchas.entries())) {
+    const allCaptchas = await this.getAllCaptchas();
+    
+    for (const captcha of allCaptchas) {
       if (now > captcha.expiresAt) {
-        this.captchas.delete(sessionId);
+        await db.delete(`captcha:${captcha.sessionId}`);
       }
     }
   }
 }
 
-// Use memory storage - Replit Database implementation needs fixes
-export const storage = new MemStorage();
+export const storage = new ReplitStorage();
