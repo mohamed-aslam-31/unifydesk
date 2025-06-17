@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { RefreshCw, Volume2 } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 
 interface VisualCaptchaProps {
   onVerify: (isValid: boolean) => void;
@@ -115,15 +115,7 @@ export function VisualCaptcha({ onVerify, isVerified, className }: VisualCaptcha
     if (error) setError("");
   };
 
-  const handleAudioCaptcha = () => {
-    // Simple text-to-speech for accessibility
-    if ('speechSynthesis' in window) {
-      const utterance = new SpeechSynthesisUtterance(captchaText.split('').join(' '));
-      utterance.rate = 0.6;
-      utterance.pitch = 0.8;
-      speechSynthesis.speak(utterance);
-    }
-  };
+
 
   return (
     <div className={`space-y-4 ${className}`}>
@@ -132,28 +124,16 @@ export function VisualCaptcha({ onVerify, isVerified, className }: VisualCaptcha
           <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
             captcha
           </span>
-          <div className="flex gap-2">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={handleAudioCaptcha}
-              className="p-2 h-8 w-8"
-              title="Listen to captcha"
-            >
-              <Volume2 className="h-4 w-4" />
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={generateCaptcha}
-              className="p-2 h-8 w-8"
-              title="Refresh captcha"
-            >
-              <RefreshCw className="h-4 w-4" />
-            </Button>
-          </div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={generateCaptcha}
+            className="p-2 h-8 w-8"
+            title="Refresh captcha"
+          >
+            <RefreshCw className="h-4 w-4" />
+          </Button>
         </div>
         
         <canvas
@@ -182,7 +162,7 @@ export function VisualCaptcha({ onVerify, isVerified, className }: VisualCaptcha
               disabled={userInput.length === 0}
               className="px-6 bg-blue-600 hover:bg-blue-700 text-white"
             >
-              GO
+              Verify
             </Button>
           </div>
         </div>

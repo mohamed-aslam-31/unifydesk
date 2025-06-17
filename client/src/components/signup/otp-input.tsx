@@ -69,7 +69,7 @@ export function OTPInput({ length = 6, onComplete, disabled = false }: OTPInputP
   };
 
   return (
-    <div className="flex justify-center space-x-2">
+    <div className="flex justify-center gap-1 sm:gap-2 max-w-full overflow-x-auto">
       {otp.map((value, index) => (
         <Input
           key={index}
@@ -83,7 +83,7 @@ export function OTPInput({ length = 6, onComplete, disabled = false }: OTPInputP
           onFocus={() => handleFocus(index)}
           onPaste={handlePaste}
           disabled={disabled}
-          className="w-12 h-12 text-center text-lg font-semibold border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+          className="w-8 h-8 sm:w-12 sm:h-12 text-center text-sm sm:text-lg font-semibold border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent flex-shrink-0"
         />
       ))}
     </div>

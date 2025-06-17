@@ -140,9 +140,10 @@ export const signupSchema = z.object({
     .max(15, "First name must not exceed 15 characters")
     .regex(/^[a-zA-Z]+$/, "First name can only contain letters"),
   lastName: z.string()
-    .min(1, "Enter your Last Name")
     .max(15, "Last name must not exceed 15 characters")
-    .regex(/^[a-zA-Z]+$/, "Last name can only contain letters"),
+    .regex(/^[a-zA-Z]*$/, "Last name can only contain letters")
+    .optional()
+    .or(z.literal("")),
   username: z.string()
     .min(1, "Enter your Username")
     .min(3, "Username must be at least 3 characters")
