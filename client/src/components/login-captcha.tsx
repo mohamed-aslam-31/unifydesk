@@ -46,82 +46,86 @@ export function LoginCaptcha({ onValidation, resetTrigger }: LoginCaptchaProps) 
 
   const drawVisualCaptcha = (text: string) => {
     console.log("Drawing captcha:", text);
-    const canvas = canvasRef.current;
-    if (!canvas) {
-      console.error("Canvas ref not available");
-      return;
-    }
-
-    const ctx = canvas.getContext("2d");
-    if (!ctx) {
-      console.error("Canvas context not available");
-      return;
-    }
-
-    // Set canvas size
-    canvas.width = 200;
-    canvas.height = 80;
-
-    // Clear canvas
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // Add background with subtle pattern
-    ctx.fillStyle = "#f8f9fa";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // Add noise dots
-    for (let i = 0; i < 50; i++) {
-      ctx.fillStyle = `rgba(${Math.random() * 100}, ${Math.random() * 100}, ${Math.random() * 100}, 0.3)`;
-      ctx.fillRect(Math.random() * canvas.width, Math.random() * canvas.height, 2, 2);
-    }
-
-    // Add wavy lines
-    ctx.strokeStyle = "rgba(100, 100, 100, 0.3)";
-    ctx.lineWidth = 1;
-    for (let i = 0; i < 3; i++) {
-      ctx.beginPath();
-      ctx.moveTo(0, Math.random() * canvas.height);
-      for (let x = 0; x < canvas.width; x += 10) {
-        ctx.lineTo(x, Math.sin(x * 0.1 + i) * 15 + canvas.height / 2);
-      }
-      ctx.stroke();
-    }
-
-    // Draw the text with distortion
-    const letters = text.split("");
-    const letterWidth = canvas.width / letters.length;
     
-    letters.forEach((letter, index) => {
-      const x = index * letterWidth + letterWidth / 2;
-      const y = canvas.height / 2;
+    // Use requestAnimationFrame to ensure the canvas is rendered
+    requestAnimationFrame(() => {
+      const canvas = canvasRef.current;
+      if (!canvas) {
+        console.error("Canvas ref not available");
+        return;
+      }
+
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        console.error("Canvas context not available");
+        return;
+      }
+
+      // Set canvas size
+      canvas.width = 200;
+      canvas.height = 80;
+
+      // Clear canvas
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Add background with subtle pattern
+      ctx.fillStyle = "#f8f9fa";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Add noise dots
+      for (let i = 0; i < 50; i++) {
+        ctx.fillStyle = `rgba(${Math.random() * 100}, ${Math.random() * 100}, ${Math.random() * 100}, 0.3)`;
+        ctx.fillRect(Math.random() * canvas.width, Math.random() * canvas.height, 2, 2);
+      }
+
+      // Add wavy lines
+      ctx.strokeStyle = "rgba(100, 100, 100, 0.3)";
+      ctx.lineWidth = 1;
+      for (let i = 0; i < 3; i++) {
+        ctx.beginPath();
+        ctx.moveTo(0, Math.random() * canvas.height);
+        for (let x = 0; x < canvas.width; x += 10) {
+          ctx.lineTo(x, Math.sin(x * 0.1 + i) * 15 + canvas.height / 2);
+        }
+        ctx.stroke();
+      }
+
+      // Draw the text with distortion
+      const letters = text.split("");
+      const letterWidth = canvas.width / letters.length;
       
-      ctx.save();
-      
-      // Random font size
-      const fontSize = 20 + Math.random() * 8;
-      ctx.font = `bold ${fontSize}px Arial, sans-serif`;
-      
-      // Random rotation
-      const rotation = (Math.random() - 0.5) * 0.6;
-      ctx.translate(x, y);
-      ctx.rotate(rotation);
-      
-      // Random color
-      const colors = ["#2563eb", "#dc2626", "#059669", "#7c2d12", "#4338ca"];
-      ctx.fillStyle = colors[Math.floor(Math.random() * colors.length)];
-      
-      // Add text shadow
-      ctx.shadowColor = "rgba(0, 0, 0, 0.3)";
-      ctx.shadowBlur = 2;
-      ctx.shadowOffsetX = 1;
-      ctx.shadowOffsetY = 1;
-      
-      // Draw letter
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText(letter, 0, 0);
-      
-      ctx.restore();
+      letters.forEach((letter, index) => {
+        const x = index * letterWidth + letterWidth / 2;
+        const y = canvas.height / 2;
+        
+        ctx.save();
+        
+        // Random font size
+        const fontSize = 20 + Math.random() * 8;
+        ctx.font = `bold ${fontSize}px Arial, sans-serif`;
+        
+        // Random rotation
+        const rotation = (Math.random() - 0.5) * 0.6;
+        ctx.translate(x, y);
+        ctx.rotate(rotation);
+        
+        // Random color
+        const colors = ["#2563eb", "#dc2626", "#059669", "#7c2d12", "#4338ca"];
+        ctx.fillStyle = colors[Math.floor(Math.random() * colors.length)];
+        
+        // Add text shadow
+        ctx.shadowColor = "rgba(0, 0, 0, 0.3)";
+        ctx.shadowBlur = 2;
+        ctx.shadowOffsetX = 1;
+        ctx.shadowOffsetY = 1;
+        
+        // Draw letter
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(letter, 0, 0);
+        
+        ctx.restore();
+      });
     });
   };
 
