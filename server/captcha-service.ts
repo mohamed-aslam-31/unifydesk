@@ -74,12 +74,23 @@ export class CaptchaService {
     return questions[Math.floor(Math.random() * questions.length)];
   }
 
-  // Generate a random CAPTCHA (mix of math and text)
+  // Generate visual text CAPTCHA with random characters
+  private generateVisualCaptcha(): { question: string; answer: string } {
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    let result = "";
+    for (let i = 0; i < 6; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return {
+      question: result,
+      answer: result
+    };
+  }
+
+  // Generate a random CAPTCHA (visual text only)
   generateCaptcha(): { question: string; answer: string; sessionId: string } {
     const sessionId = uuidv4();
-    const useMath = Math.random() > 0.5;
-    
-    const captcha = useMath ? this.generateMathCaptcha() : this.generateTextCaptcha();
+    const captcha = this.generateVisualCaptcha();
     
     return {
       question: captcha.question,
