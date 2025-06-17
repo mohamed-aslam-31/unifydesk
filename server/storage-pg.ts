@@ -48,6 +48,13 @@ export class PostgreSQLStorage implements IStorage {
     return result[0] ? this.convertUser(result[0]) : undefined;
   }
 
+  async getUserByPhone(phone: string, countryCode: string): Promise<SharedUser | undefined> {
+    const result = await db.select().from(users).where(
+      and(eq(users.phone, phone), eq(users.countryCode, countryCode))
+    ).limit(1);
+    return result[0] ? this.convertUser(result[0]) : undefined;
+  }
+
 
 
   async createUser(insertUser: InsertUser): Promise<SharedUser> {

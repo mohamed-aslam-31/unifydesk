@@ -141,6 +141,11 @@ export class ReplitStorage implements IStorage {
     return users.find(user => user.username === username);
   }
 
+  async getUserByPhone(phone: string, countryCode: string): Promise<User | undefined> {
+    const users = await this.getAllUsers();
+    return users.find(user => user.phone === phone && user.countryCode === countryCode);
+  }
+
 
 
   async createUser(insertUser: InsertUser): Promise<User> {

@@ -538,9 +538,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(401).json({ message: "No user found with this email address" });
         }
       } else {
-        // For phone number login - we need to implement getUserByPhone
-        user = null; // Temporarily disable phone login until we implement getUserByPhone
-        return res.status(401).json({ message: "No user found with this phone number" });
+        // For phone login, extract country code and phone number
+        const phonePattern = /^(\+\d{1,3})?[\s\-]?(.+)$/;
+        const match = identifier.match(phonePattern);
+        
+        if (match) {
+          const countryCode = match[1] || '+91'; // Default to +91 if no country code
+          const phoneNumber = match[2].replace(/[\s\-\(\)]/g, ''); // Clean phone number
+          
+          try {
+            user = await storage.getUserByPhone(phoneNumber, countryCode);
+          } catch (error) {
+            console.error('Error finding user by phone:', error);
+            user = null;
+          }
+        } else {
+          user = null;
+        }
+        
+        if (!user) {
+          return res.status(401).json({ message: "No user found with this phone number" });
+        }
       }
 
       // Verify password using bcrypt
