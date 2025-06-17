@@ -348,7 +348,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         phone: validatedData.phone,
         countryCode: validatedData.countryCode,
         isWhatsApp: validatedData.isWhatsApp,
-        gender: validatedData.gender,
+        gender: validatedData.gender || null,
         dateOfBirth: validatedData.dateOfBirth,
         country: validatedData.country,
         state: validatedData.state,

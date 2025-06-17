@@ -153,7 +153,7 @@ export const signupSchema = z.object({
   phone: z.string().min(1, "Enter your phone number").min(10, "Phone number must be at least 10 digits"),
   countryCode: z.string().min(1, "Country code is required"),
   isWhatsApp: z.boolean().default(false),
-  gender: z.enum(["male", "female", "other", "prefer-not-to-say"]).optional().or(z.literal("")),
+  gender: z.enum(["male", "female", "other", "prefer-not-to-say"]).optional(),
   dateOfBirth: z.string().min(1, "Select your Date of Birth").refine((date) => {
     const birth = new Date(date);
     const today = new Date();
