@@ -187,6 +187,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // OTP verification endpoints
+  app.post("/api/send-otp", async (req, res) => {
+    try {
+      const { identifier, type } = req.body; // identifier = email or phone, type = 'email' or 'phone'
+      
+      // Check rate limiting
+      const attempts = await storage.getOtpAttempts(identifier, type);
+      if (attempts && attempts.blockedUntil && attempts.blockedUntil > new Date()) {
+        return res.status(429).json({ 
+          message: "Too many attempts. Please try again later.",
+          blockedUntil: attempts.blockedUntil 
+        });
+      }
+
+      if (attempts && attempts.attempts >= 5) {
+        const blockedUntil = new Date(Date.now() + 5 * 60 * 60 * 1000); // 5 hours
+        await storage.createOrUpdateOtpAttempts({
+          identifier,
+          type,
+          attempts: attempts.attempts,
+          lastAttempt: new Date(),
+          blockedUntil,
+        });
+        return res.status(429).json({ 
+          message: "Maximum attempts exceeded. Blocked for 5 hours.",
+          blockedUntil 
+        });
+      }
+
+      // Generate OTP
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      
+      // Update attempts
+      await storage.createOrUpdateOtpAttempts({
+        identifier,
+        type,
+        attempts: (attempts?.attempts || 0) + 1,
+        lastAttempt: new Date(),
+        blockedUntil: undefined,
+      });
+
+      // TODO: Send actual OTP via email/SMS
+      console.log(`OTP for ${identifier}: ${otp}`);
+      
+      res.json({ message: "OTP sent successfully", remainingAttempts: 5 - ((attempts?.attempts || 0) + 1) });
+    } catch (error) {
+      console.error("Send OTP error:", error);
+      res.status(500).json({ message: "Failed to send OTP" });
+    }
+  });
+
   app.post("/api/auth/send-otp", async (req, res) => {
     try {
       const { identifier, type } = req.body; // identifier = email or phone, type = 'email' or 'phone'
@@ -234,6 +284,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Send OTP error:", error);
       res.status(500).json({ message: "Failed to send OTP" });
+    }
+  });
+
+  app.post("/api/verify-otp", async (req, res) => {
+    try {
+      const { identifier, type, otp } = req.body;
+      
+      // TODO: Verify actual OTP
+      // For demo, accept any 6-digit OTP
+      if (!/^\d{6}$/.test(otp)) {
+        return res.status(400).json({ message: "Invalid OTP format" });
+      }
+
+      res.json({ message: "OTP verified successfully" });
+    } catch (error) {
+      console.error("Verify OTP error:", error);
+      res.status(500).json({ message: "Failed to verify OTP" });
     }
   });
 
