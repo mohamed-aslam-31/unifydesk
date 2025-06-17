@@ -269,8 +269,13 @@ export class MemStorage implements IStorage {
 
   async verifyCaptcha(sessionId: string, answer: string): Promise<boolean> {
     const captcha = this.captchas.get(sessionId);
-    if (!captcha || captcha.solved || new Date() > captcha.expiresAt) {
+    if (!captcha || new Date() > captcha.expiresAt) {
       return false;
+    }
+
+    // If already solved, just check if the answer matches (for signup verification)
+    if (captcha.solved) {
+      return captcha.answer.toLowerCase() === answer.toLowerCase();
     }
 
     const newAttempts = captcha.attempts + 1;
