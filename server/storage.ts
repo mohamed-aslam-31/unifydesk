@@ -302,5 +302,55 @@ export class MemStorage implements IStorage {
   }
 }
 
-// Use memory storage - Replit Database implementation needs fixes
-export const storage = new MemStorage();
+// Dynamic storage selection based on environment
+let storageInstance: IStorage;
+
+async function initializeStorage(): Promise<IStorage> {
+  if (process.env.DATABASE_URL) {
+    try {
+      console.log("Initializing PostgreSQL storage...");
+      const { storage: pgStorage } = await import("./storage-pg.js");
+      await pgStorage.getUser(1); // Test connection
+      console.log("PostgreSQL storage initialized successfully");
+      return pgStorage;
+    } catch (error) {
+      console.log("PostgreSQL storage failed, trying Replit Database...");
+      try {
+        const { storage: replitStorage } = await import("./storage-replit.js");
+        await replitStorage.getUser(1);
+        console.log("Replit Database storage initialized successfully");
+        return replitStorage;
+      } catch (replitError) {
+        console.log("All database connections failed, using in-memory storage");
+        return new MemStorage();
+      }
+    }
+  } else {
+    try {
+      console.log("No PostgreSQL URL found, trying Replit Database...");
+      const { storage: replitStorage } = await import("./storage-replit.js");
+      await replitStorage.getUser(1);
+      console.log("Replit Database storage initialized successfully"); 
+      return replitStorage;
+    } catch (replitError) {
+      console.log("Replit Database failed, using in-memory storage");
+      return new MemStorage();
+    }
+  }
+}
+
+// Initialize storage asynchronously
+const storagePromise = initializeStorage();
+
+// Export a proxy that waits for initialization
+export const storage: IStorage = new Proxy({} as IStorage, {
+  get(target, prop) {
+    return async (...args: any[]) => {
+      if (!storageInstance) {
+        storageInstance = await storagePromise;
+      }
+      const method = (storageInstance as any)[prop];
+      return method.apply(storageInstance, args);
+    };
+  }
+});
