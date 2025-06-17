@@ -5,6 +5,7 @@ import { AdminForm } from "./admin-form";
 import { EmployeeForm } from "./employee-form";
 import { ShopkeeperForm } from "./shopkeeper-form";
 import { Progress } from "@/components/ui/progress";
+import { FloatingBackground } from "@/components/floating-background";
 import { useLocation } from "wouter";
 
 interface SignupWizardProps {
@@ -78,11 +79,14 @@ export function SignupWizard({ onComplete }: SignupWizardProps) {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 transition-all duration-300">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 transition-all duration-300 relative overflow-hidden">
+      {/* Three.js Floating Background */}
+      <FloatingBackground className="opacity-30 dark:opacity-20" />
+      
       {/* Progress Bar */}
       {currentStep !== "complete" && (
-        <div className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 py-6">
-          <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border-b border-slate-200 dark:border-slate-700 py-4 sm:py-6 relative z-10">
+          <div className="max-w-2xl mx-auto px-2 sm:px-4 lg:px-8">
             <div className="flex items-center justify-center mb-4">
               <div className="flex items-center space-x-4">
                 {/* Step 1 */}
@@ -139,8 +143,8 @@ export function SignupWizard({ onComplete }: SignupWizardProps) {
       )}
 
       {/* Step Content */}
-      <div className="py-8 flex items-center justify-center">
-        <div className="w-full max-w-2xl px-4">
+      <div className="py-4 sm:py-8 flex items-center justify-center relative z-10">
+        <div className="w-full max-w-2xl px-1 sm:px-4">
           {currentStep === "personal" && (
             <PersonalInfo onSuccess={handlePersonalInfoSuccess} />
           )}
