@@ -101,8 +101,8 @@ export class CaptchaService {
 
   // Validate answer (case-insensitive, trim whitespace)
   validateAnswer(userAnswer: string, correctAnswer: string): boolean {
-    const cleanUserAnswer = userAnswer.trim().toLowerCase();
-    const cleanCorrectAnswer = correctAnswer.trim().toLowerCase();
+    const cleanUserAnswer = userAnswer.trim().toUpperCase();
+    const cleanCorrectAnswer = correctAnswer.trim().toUpperCase();
     
     return cleanUserAnswer === cleanCorrectAnswer;
   }

@@ -52,6 +52,17 @@ export const roleData = pgTable('role_data', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
+export const captchas = pgTable('captchas', {
+  id: serial('id').primaryKey(),
+  sessionId: varchar('session_id', { length: 255 }).notNull().unique(),
+  question: varchar('question', { length: 255 }).notNull(),
+  answer: varchar('answer', { length: 255 }).notNull(),
+  attempts: integer('attempts').default(0).notNull(),
+  solved: boolean('solved').default(false).notNull(),
+  expiresAt: timestamp('expires_at').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type Session = typeof sessions.$inferSelect;
@@ -60,3 +71,5 @@ export type OtpAttempt = typeof otpAttempts.$inferSelect;
 export type NewOtpAttempt = typeof otpAttempts.$inferInsert;
 export type RoleData = typeof roleData.$inferSelect;
 export type NewRoleData = typeof roleData.$inferInsert;
+export type Captcha = typeof captchas.$inferSelect;
+export type NewCaptcha = typeof captchas.$inferInsert;

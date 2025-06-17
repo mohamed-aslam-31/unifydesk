@@ -189,26 +189,81 @@ export class PostgreSQLStorage implements IStorage {
     return result.length === 0;
   }
 
-  // CAPTCHA methods - delegate to Replit Database for now
+  // CAPTCHA methods - using PostgreSQL
   async createCaptcha(captcha: InsertCaptcha): Promise<Captcha> {
-    // Import Replit storage for CAPTCHA operations
-    const { storage: replitStorage } = await import("./storage-replit.js");
-    return replitStorage.createCaptcha(captcha);
+    const captchaData: NewCaptcha = {
+      sessionId: captcha.sessionId,
+      question: captcha.question,
+      answer: captcha.answer,
+      attempts: captcha.attempts || 0,
+      solved: captcha.solved || false,
+      expiresAt: captcha.expiresAt,
+    };
+
+    const [result] = await db.insert(captchas).values(captchaData).returning();
+    return this.convertCaptcha(result);
   }
 
   async getCaptcha(sessionId: string): Promise<Captcha | undefined> {
-    const { storage: replitStorage } = await import("./storage-replit.js");
-    return replitStorage.getCaptcha(sessionId);
+    const result = await db
+      .select()
+      .from(captchas)
+      .where(eq(captchas.sessionId, sessionId))
+      .limit(1);
+
+    return result[0] ? this.convertCaptcha(result[0]) : undefined;
   }
 
   async verifyCaptcha(sessionId: string, answer: string): Promise<boolean> {
-    const { storage: replitStorage } = await import("./storage-replit.js");
-    return replitStorage.verifyCaptcha(sessionId, answer);
+    try {
+      const captcha = await this.getCaptcha(sessionId);
+      
+      if (!captcha) {
+        console.log("Invalid captcha session in database:", sessionId);
+        return false;
+      }
+
+      if (new Date() > captcha.expiresAt) {
+        console.log("Captcha expired");
+        return false;
+      }
+
+      if (captcha.solved) {
+        console.log("Captcha already solved");
+        return false;
+      }
+
+      if (captcha.attempts >= 3) {
+        console.log("Too many captcha attempts");
+        return false;
+      }
+
+      // Import and use captcha service for validation
+      const { captchaService } = await import("./captcha-service.js");
+      const isValid = captchaService.validateAnswer(answer, captcha.answer);
+
+      console.log(`Captcha validation: user='${answer}' correct='${captcha.answer}' valid=${isValid}`);
+
+      // Update attempts
+      await db
+        .update(captchas)
+        .set({ 
+          attempts: captcha.attempts + 1,
+          solved: isValid
+        })
+        .where(eq(captchas.sessionId, sessionId));
+
+      return isValid;
+    } catch (error) {
+      console.error("Captcha verification error:", error);
+      return false;
+    }
   }
 
   async cleanupExpiredCaptchas(): Promise<void> {
-    const { storage: replitStorage } = await import("./storage-replit.js");
-    return replitStorage.cleanupExpiredCaptchas();
+    await db
+      .delete(captchas)
+      .where(lt(captchas.expiresAt, new Date()));
   }
 
   // Helper methods to convert PostgreSQL types to shared schema types
