@@ -214,6 +214,10 @@ export function LoginCaptcha({ onValidation, resetTrigger }: LoginCaptchaProps) 
         <div className="bg-slate-100 dark:bg-slate-700 p-3 rounded border border-slate-200 dark:border-slate-600 min-h-[80px] flex items-center justify-center select-none">
           {isLoading ? (
             <Loader2 className="h-6 w-6 animate-spin" />
+          ) : isVerified ? (
+            <div className="w-[200px] h-[80px] bg-white border border-gray-200 rounded flex items-center justify-center">
+              <div className="text-green-600 font-semibold text-lg">✓ Verified</div>
+            </div>
           ) : (
             <canvas
               ref={canvasRef}

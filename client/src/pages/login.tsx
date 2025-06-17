@@ -8,6 +8,7 @@ import { Footer } from "@/components/footer";
 import { FloatingBackground } from "@/components/floating-background";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -19,6 +20,7 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp
 const loginSchema = z.object({
   identifier: z.string().min(1, "Email or phone number is required"),
   password: z.string().min(1, "Password is required"),
+  rememberMe: z.boolean().default(false),
 });
 
 const otpSchema = z.object({
@@ -436,6 +438,34 @@ export default function LoginPage() {
               </Alert>
             )}
 
+            <div className="flex items-center justify-between">
+              <FormField
+                control={form.control}
+                name="rememberMe"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel className="text-[12px] text-slate-600 dark:text-slate-400">
+                        Remember me for 30 days
+                      </FormLabel>
+                    </div>
+                  </FormItem>
+                )}
+              />
+              <a 
+                href="/forgot-password" 
+                className="text-sm text-primary hover:text-primary/80"
+              >
+                Forgot your password?
+              </a>
+            </div>
+
             <Button
               type="submit"
               className="w-full bg-primary hover:bg-primary/90"
@@ -453,13 +483,7 @@ export default function LoginPage() {
           </form>
         </Form>
 
-        <div className="text-center space-y-2">
-          <a 
-            href="/forgot-password" 
-            className="text-sm text-primary hover:text-primary/80"
-          >
-            Forgot your password?
-          </a>
+        <div className="text-center">
           <p className="text-sm text-slate-600 dark:text-slate-400">
             Don't have an account?{" "}
             <a 
