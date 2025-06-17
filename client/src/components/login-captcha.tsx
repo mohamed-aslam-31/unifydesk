@@ -33,11 +33,86 @@ export function LoginCaptcha({ onValidation, resetTrigger }: LoginCaptchaProps) 
       const data = await response.json();
       setCaptchaQuestion(data.question);
       setSessionId(data.sessionId);
+      drawVisualCaptcha(data.question);
     } catch (error) {
       setError("Failed to load CAPTCHA. Please try again.");
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const drawVisualCaptcha = (text: string) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    // Set canvas size
+    canvas.width = 200;
+    canvas.height = 80;
+
+    // Clear canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Add background with subtle pattern
+    ctx.fillStyle = "#f8f9fa";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Add noise dots
+    for (let i = 0; i < 50; i++) {
+      ctx.fillStyle = `rgba(${Math.random() * 100}, ${Math.random() * 100}, ${Math.random() * 100}, 0.3)`;
+      ctx.fillRect(Math.random() * canvas.width, Math.random() * canvas.height, 2, 2);
+    }
+
+    // Add wavy lines
+    ctx.strokeStyle = "rgba(100, 100, 100, 0.3)";
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 3; i++) {
+      ctx.beginPath();
+      ctx.moveTo(0, Math.random() * canvas.height);
+      for (let x = 0; x < canvas.width; x += 10) {
+        ctx.lineTo(x, Math.sin(x * 0.1 + i) * 15 + canvas.height / 2);
+      }
+      ctx.stroke();
+    }
+
+    // Draw the text with distortion
+    const letters = text.split("");
+    const letterWidth = canvas.width / letters.length;
+    
+    letters.forEach((letter, index) => {
+      const x = index * letterWidth + letterWidth / 2;
+      const y = canvas.height / 2;
+      
+      ctx.save();
+      
+      // Random font size
+      const fontSize = 20 + Math.random() * 8;
+      ctx.font = `bold ${fontSize}px Arial, sans-serif`;
+      
+      // Random rotation
+      const rotation = (Math.random() - 0.5) * 0.6;
+      ctx.translate(x, y);
+      ctx.rotate(rotation);
+      
+      // Random color
+      const colors = ["#2563eb", "#dc2626", "#059669", "#7c2d12", "#4338ca"];
+      ctx.fillStyle = colors[Math.floor(Math.random() * colors.length)];
+      
+      // Add text shadow
+      ctx.shadowColor = "rgba(0, 0, 0, 0.3)";
+      ctx.shadowBlur = 2;
+      ctx.shadowOffsetX = 1;
+      ctx.shadowOffsetY = 1;
+      
+      // Draw letter
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(letter, 0, 0);
+      
+      ctx.restore();
+    });
   };
 
   const verifyCaptcha = async () => {
@@ -89,7 +164,7 @@ export function LoginCaptcha({ onValidation, resetTrigger }: LoginCaptchaProps) 
   }, [resetTrigger]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setUserAnswer(e.target.value);
+    setUserAnswer(e.target.value.toUpperCase());
     if (error) setError("");
   };
 
@@ -119,11 +194,15 @@ export function LoginCaptcha({ onValidation, resetTrigger }: LoginCaptchaProps) 
           </Button>
         </div>
         
-        <div className="bg-slate-100 dark:bg-slate-700 p-3 rounded border border-slate-200 dark:border-slate-600 min-h-[80px] flex items-center justify-center font-mono text-xl font-bold tracking-widest text-slate-800 dark:text-slate-200 select-none">
+        <div className="bg-slate-100 dark:bg-slate-700 p-3 rounded border border-slate-200 dark:border-slate-600 min-h-[80px] flex items-center justify-center select-none">
           {isLoading ? (
             <Loader2 className="h-6 w-6 animate-spin" />
           ) : (
-            captchaQuestion
+            <canvas
+              ref={canvasRef}
+              className="border border-gray-200 rounded bg-white"
+              style={{ width: "200px", height: "80px" }}
+            />
           )}
         </div>
         
