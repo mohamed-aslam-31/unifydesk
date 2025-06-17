@@ -10,7 +10,7 @@ export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
-  getUserByFirebaseUid(firebaseUid: string): Promise<User | undefined>;
+
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, updates: Partial<User>): Promise<User | undefined>;
 
@@ -55,10 +55,7 @@ export class MongoStorage implements IStorage {
     return user ? this.convertUserDocument(user) : undefined;
   }
 
-  async getUserByFirebaseUid(firebaseUid: string): Promise<User | undefined> {
-    const user = await UserModel.findOne({ firebaseUid }).exec();
-    return user ? this.convertUserDocument(user) : undefined;
-  }
+
 
   async createUser(insertUser: InsertUser): Promise<User> {
     // Generate unique ID
@@ -219,7 +216,7 @@ export class MongoStorage implements IStorage {
       city: doc.city,
       address: doc.address,
       password: doc.password,
-      firebaseUid: doc.firebaseUid,
+
       role: doc.role,
       roleStatus: doc.roleStatus,
       emailVerified: doc.emailVerified,

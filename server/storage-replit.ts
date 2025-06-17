@@ -9,7 +9,7 @@ export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
-  getUserByFirebaseUid(firebaseUid: string): Promise<User | undefined>;
+
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, updates: Partial<User>): Promise<User | undefined>;
 
@@ -141,10 +141,7 @@ export class ReplitStorage implements IStorage {
     return users.find(user => user.username === username);
   }
 
-  async getUserByFirebaseUid(firebaseUid: string): Promise<User | undefined> {
-    const users = await this.getAllUsers();
-    return users.find(user => user.firebaseUid === firebaseUid);
-  }
+
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const hashedPassword = insertUser.password ? await bcrypt.hash(insertUser.password, 10) : insertUser.password;
@@ -166,7 +163,7 @@ export class ReplitStorage implements IStorage {
       city: insertUser.city,
       address: insertUser.address || null,
       password: hashedPassword,
-      firebaseUid: insertUser.firebaseUid || null,
+
       role: insertUser.role || null,
       roleStatus: insertUser.roleStatus || 'pending',
       emailVerified: insertUser.emailVerified ?? false,

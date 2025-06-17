@@ -15,7 +15,7 @@ export interface UserDocument extends Document {
   city: string;
   address?: string;
   password: string;
-  firebaseUid?: string;
+
   role?: string;
   roleStatus: string;
   emailVerified: boolean;
@@ -38,7 +38,7 @@ const UserSchema = new Schema<UserDocument>({
   city: { type: String, required: true },
   address: { type: String },
   password: { type: String, required: true },
-  firebaseUid: { type: String },
+
   role: { type: String },
   roleStatus: { type: String, default: 'pending' },
   emailVerified: { type: Boolean, default: false },
