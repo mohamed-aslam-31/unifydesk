@@ -123,7 +123,7 @@ export default function LoginPage() {
     setIsValidating(true);
     try {
       const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-      const isPhone = /^[+]?[\d\s\-\(\)]{10,}$/.test(value);
+      const isPhone = /^(\+\d{1,3})?[\s\-]?[\d\s\-\(\)]{8,15}$/.test(value);
       
       if (!isEmail && !isPhone) {
         setValidationStatus("invalid");

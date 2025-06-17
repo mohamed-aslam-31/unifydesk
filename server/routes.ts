@@ -515,7 +515,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Determine if identifier is email or phone
       const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier);
-      const isPhone = /^[+]?[\d\s\-\(\)]{10,}$/.test(identifier);
+      const isPhone = /^(\+\d{1,3})?[\s\-]?[\d\s\-\(\)]{8,15}$/.test(identifier);
       
       if (!isEmail && !isPhone) {
         return res.status(400).json({ message: "Please enter a valid email or phone number" });
