@@ -170,10 +170,9 @@ export class MemStorage implements IStorage {
     if (existing) {
       const updated: OtpAttempt = {
         ...existing,
-        attempts: attempt.attempts,
-        lastAttempt: attempt.lastAttempt,
-        blockedUntil: attempt.blockedUntil,
-        updatedAt: new Date()
+        attempts: attempt.attempts ?? 0,
+        lastAttempt: attempt.lastAttempt ?? null,
+        blockedUntil: attempt.blockedUntil ?? null
       };
       this.otpAttempts.set(key, updated);
       return updated;
@@ -183,11 +182,10 @@ export class MemStorage implements IStorage {
       id: this.currentOtpId++,
       identifier: attempt.identifier,
       type: attempt.type,
-      attempts: attempt.attempts,
-      lastAttempt: attempt.lastAttempt,
-      blockedUntil: attempt.blockedUntil,
-      createdAt: new Date(),
-      updatedAt: new Date()
+      attempts: attempt.attempts ?? 0,
+      lastAttempt: attempt.lastAttempt ?? null,
+      blockedUntil: attempt.blockedUntil ?? null,
+      createdAt: new Date()
     };
     
     this.otpAttempts.set(key, otpData);
@@ -200,8 +198,7 @@ export class MemStorage implements IStorage {
       userId: roleDataInsert.userId,
       role: roleDataInsert.role,
       data: roleDataInsert.data,
-      createdAt: new Date(),
-      updatedAt: new Date()
+      createdAt: new Date()
     };
     
     this.roleData.set(data.id, data);
@@ -210,7 +207,7 @@ export class MemStorage implements IStorage {
 
   async getRoleDataByUser(userId: number): Promise<RoleData[]> {
     const result: RoleData[] = [];
-    for (const data of this.roleData.values()) {
+    for (const data of Array.from(this.roleData.values())) {
       if (data.userId === userId) {
         result.push(data);
       }
@@ -219,7 +216,7 @@ export class MemStorage implements IStorage {
   }
 
   async isUsernameAvailable(username: string): Promise<boolean> {
-    for (const user of this.users.values()) {
+    for (const user of Array.from(this.users.values())) {
       if (user.username === username) {
         return false;
       }
@@ -228,7 +225,7 @@ export class MemStorage implements IStorage {
   }
 
   async isEmailAvailable(email: string): Promise<boolean> {
-    for (const user of this.users.values()) {
+    for (const user of Array.from(this.users.values())) {
       if (user.email === email) {
         return false;
       }
@@ -237,7 +234,7 @@ export class MemStorage implements IStorage {
   }
 
   async isPhoneAvailable(phone: string, countryCode: string): Promise<boolean> {
-    for (const user of this.users.values()) {
+    for (const user of Array.from(this.users.values())) {
       if (user.phone === phone && user.countryCode === countryCode) {
         return false;
       }
@@ -254,8 +251,7 @@ export class MemStorage implements IStorage {
       expiresAt: insertCaptcha.expiresAt,
       attempts: insertCaptcha.attempts ?? 0,
       solved: insertCaptcha.solved ?? false,
-      createdAt: new Date(),
-      updatedAt: new Date()
+      createdAt: new Date()
     };
     
     this.captchas.set(captcha.sessionId, captcha);
@@ -282,7 +278,6 @@ export class MemStorage implements IStorage {
     if (captcha.answer.toLowerCase() === answer.toLowerCase()) {
       captcha.attempts = newAttempts;
       captcha.solved = true;
-      captcha.updatedAt = new Date();
       this.captchas.set(sessionId, captcha);
       return true;
     }
@@ -291,7 +286,6 @@ export class MemStorage implements IStorage {
       this.captchas.delete(sessionId);
     } else {
       captcha.attempts = newAttempts;
-      captcha.updatedAt = new Date();
       this.captchas.set(sessionId, captcha);
     }
 

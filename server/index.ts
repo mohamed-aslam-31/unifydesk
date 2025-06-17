@@ -38,8 +38,21 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Using in-memory storage for development
-  console.log("Using in-memory storage (data will reset on restart)");
+  // Try to connect to PostgreSQL, fallback to in-memory storage
+  if (process.env.DATABASE_URL) {
+    try {
+      console.log("Attempting to connect to PostgreSQL database...");
+      // Import and test PostgreSQL storage
+      const { storage } = await import("./storage-pg.js");
+      await storage.getUser(1); // Test connection
+      console.log("Connected to PostgreSQL database successfully");
+    } catch (error) {
+      console.log("PostgreSQL connection failed, using in-memory storage");
+      console.log("Database connection error:", error instanceof Error ? error.message : String(error));
+    }
+  } else {
+    console.log("Using in-memory storage (data will reset on restart)");
+  }
   
   const server = await registerRoutes(app);
 
