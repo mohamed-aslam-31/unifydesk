@@ -1,6 +1,4 @@
-import { type User, type InsertUser, type Session, type InsertSession, type OtpAttempt, type InsertOtpAttempt, type RoleData, type InsertRoleData, type Captcha, type InsertCaptcha, users, sessions, otpAttempts, roleData, captchas } from "@shared/schema";
-import { db } from "./db";
-import { eq, and, lt } from "drizzle-orm";
+import { type User, type InsertUser, type Session, type InsertSession, type OtpAttempt, type InsertOtpAttempt, type RoleData, type InsertRoleData, type Captcha, type InsertCaptcha } from "@shared/schema";
 import bcrypt from "bcryptjs";
 
 export interface IStorage {
@@ -67,46 +65,53 @@ export class MemStorage implements IStorage {
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(user => user.email === email);
+    for (const user of this.users.values()) {
+      if (user.email === email) {
+        return user;
+      }
+    }
+    return undefined;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(user => user.username === username);
+    for (const user of this.users.values()) {
+      if (user.username === username) {
+        return user;
+      }
+    }
+    return undefined;
   }
 
   async getUserByFirebaseUid(firebaseUid: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(user => user.firebaseUid === firebaseUid);
+    for (const user of this.users.values()) {
+      if (user.firebaseUid === firebaseUid) {
+        return user;
+      }
+    }
+    return undefined;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const id = this.currentUserId++;
-    const now = new Date();
+    const hashedPassword = insertUser.password ? await bcrypt.hash(insertUser.password, 10) : null;
+    
     const user: User = {
-      firstName: insertUser.firstName,
-      lastName: insertUser.lastName,
-      username: insertUser.username,
+      id: this.currentUserId++,
       email: insertUser.email,
-      phone: insertUser.phone,
-      countryCode: insertUser.countryCode,
-      isWhatsApp: insertUser.isWhatsApp ?? false,
-      gender: insertUser.gender,
-      dateOfBirth: insertUser.dateOfBirth,
-      country: insertUser.country,
-      state: insertUser.state,
-      city: insertUser.city,
-      address: insertUser.address ?? null,
-      password: await bcrypt.hash(insertUser.password, 10),
-      firebaseUid: insertUser.firebaseUid ?? null,
-      role: insertUser.role ?? null,
-      roleStatus: insertUser.roleStatus || "pending",
-      profilePicture: insertUser.profilePicture ?? null,
-      id,
-      emailVerified: false,
-      phoneVerified: false,
-      createdAt: now,
-      updatedAt: now,
+      username: insertUser.username,
+      password: hashedPassword,
+      firstName: insertUser.firstName || null,
+      lastName: insertUser.lastName || null,
+      phone: insertUser.phone || null,
+      countryCode: insertUser.countryCode || null,
+      role: insertUser.role,
+      isEmailVerified: insertUser.isEmailVerified ?? false,
+      isPhoneVerified: insertUser.isPhoneVerified ?? false,
+      firebaseUid: insertUser.firebaseUid || null,
+      createdAt: new Date(),
+      updatedAt: new Date()
     };
-    this.users.set(id, user);
+    
+    this.users.set(user.id, user);
     return user;
   }
 
@@ -114,35 +119,31 @@ export class MemStorage implements IStorage {
     const user = this.users.get(id);
     if (!user) return undefined;
 
-    const updatedUser = {
-      ...user,
-      ...updates,
-      updatedAt: new Date(),
-    };
+    if (updates.password) {
+      updates.password = await bcrypt.hash(updates.password, 10);
+    }
+
+    const updatedUser = { ...user, ...updates, updatedAt: new Date() };
     this.users.set(id, updatedUser);
     return updatedUser;
   }
 
   async createSession(session: InsertSession): Promise<Session> {
-    const id = this.currentSessionId++;
     const sessionData: Session = {
-      ...session,
-      id,
+      id: this.currentSessionId++,
+      sessionToken: session.sessionToken,
+      userId: session.userId,
+      expires: session.expires,
       createdAt: new Date(),
+      updatedAt: new Date()
     };
-    this.sessions.set(session.sessionToken, sessionData);
+    
+    this.sessions.set(sessionData.sessionToken, sessionData);
     return sessionData;
   }
 
   async getSession(sessionToken: string): Promise<Session | undefined> {
-    const session = this.sessions.get(sessionToken);
-    if (session && session.expiresAt > new Date()) {
-      return session;
-    }
-    if (session) {
-      this.sessions.delete(sessionToken);
-    }
-    return undefined;
+    return this.sessions.get(sessionToken);
   }
 
   async deleteSession(sessionToken: string): Promise<void> {
@@ -161,67 +162,95 @@ export class MemStorage implements IStorage {
     if (existing) {
       const updated: OtpAttempt = {
         ...existing,
-        attempts: attempt.attempts || existing.attempts,
-        lastAttempt: attempt.lastAttempt || existing.lastAttempt,
-        blockedUntil: attempt.blockedUntil || existing.blockedUntil,
+        attempts: attempt.attempts,
+        lastAttempt: attempt.lastAttempt,
+        blockedUntil: attempt.blockedUntil,
+        updatedAt: new Date()
       };
       this.otpAttempts.set(key, updated);
       return updated;
-    } else {
-      const id = this.currentOtpId++;
-      const otpData: OtpAttempt = {
-        id,
-        identifier: attempt.identifier,
-        type: attempt.type,
-        attempts: attempt.attempts ?? 0,
-        lastAttempt: attempt.lastAttempt ?? null,
-        blockedUntil: attempt.blockedUntil ?? null,
-        createdAt: new Date(),
-      };
-      this.otpAttempts.set(key, otpData);
-      return otpData;
     }
+
+    const otpData: OtpAttempt = {
+      id: this.currentOtpId++,
+      identifier: attempt.identifier,
+      type: attempt.type,
+      attempts: attempt.attempts,
+      lastAttempt: attempt.lastAttempt,
+      blockedUntil: attempt.blockedUntil,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    
+    this.otpAttempts.set(key, otpData);
+    return otpData;
   }
 
   async createRoleData(roleDataInsert: InsertRoleData): Promise<RoleData> {
-    const id = this.currentRoleDataId++;
     const data: RoleData = {
-      ...roleDataInsert,
-      id,
+      id: this.currentRoleDataId++,
+      userId: roleDataInsert.userId,
+      role: roleDataInsert.role,
+      data: roleDataInsert.data,
       createdAt: new Date(),
+      updatedAt: new Date()
     };
-    this.roleData.set(id, data);
+    
+    this.roleData.set(data.id, data);
     return data;
   }
 
   async getRoleDataByUser(userId: number): Promise<RoleData[]> {
-    return Array.from(this.roleData.values()).filter(data => data.userId === userId);
+    const result: RoleData[] = [];
+    for (const data of this.roleData.values()) {
+      if (data.userId === userId) {
+        result.push(data);
+      }
+    }
+    return result;
   }
 
   async isUsernameAvailable(username: string): Promise<boolean> {
-    return !Array.from(this.users.values()).some(user => user.username === username);
+    for (const user of this.users.values()) {
+      if (user.username === username) {
+        return false;
+      }
+    }
+    return true;
   }
 
   async isEmailAvailable(email: string): Promise<boolean> {
-    return !Array.from(this.users.values()).some(user => user.email === email);
+    for (const user of this.users.values()) {
+      if (user.email === email) {
+        return false;
+      }
+    }
+    return true;
   }
 
   async isPhoneAvailable(phone: string, countryCode: string): Promise<boolean> {
-    return !Array.from(this.users.values()).some(user => 
-      user.phone === phone && user.countryCode === countryCode
-    );
+    for (const user of this.users.values()) {
+      if (user.phone === phone && user.countryCode === countryCode) {
+        return false;
+      }
+    }
+    return true;
   }
 
   async createCaptcha(insertCaptcha: InsertCaptcha): Promise<Captcha> {
-    const id = this.currentCaptchaId++;
     const captcha: Captcha = {
-      ...insertCaptcha,
+      id: this.currentCaptchaId++,
+      sessionId: insertCaptcha.sessionId,
+      question: insertCaptcha.question,
+      answer: insertCaptcha.answer,
+      expiresAt: insertCaptcha.expiresAt,
       attempts: insertCaptcha.attempts ?? 0,
       solved: insertCaptcha.solved ?? false,
-      id,
       createdAt: new Date(),
+      updatedAt: new Date()
     };
-    this.captchas.set(insertCaptcha.sessionId, captcha);
+    
+    this.captchas.set(captcha.sessionId, captcha);
     return captcha;
   }
 
@@ -235,15 +264,22 @@ export class MemStorage implements IStorage {
       return false;
     }
 
-    captcha.attempts++;
+    const newAttempts = captcha.attempts + 1;
     
     if (captcha.answer.toLowerCase() === answer.toLowerCase()) {
+      captcha.attempts = newAttempts;
       captcha.solved = true;
+      captcha.updatedAt = new Date();
+      this.captchas.set(sessionId, captcha);
       return true;
     }
 
-    if (captcha.attempts >= 3) {
+    if (newAttempts >= 3) {
       this.captchas.delete(sessionId);
+    } else {
+      captcha.attempts = newAttempts;
+      captcha.updatedAt = new Date();
+      this.captchas.set(sessionId, captcha);
     }
 
     return false;
@@ -259,198 +295,5 @@ export class MemStorage implements IStorage {
   }
 }
 
-export class DatabaseStorage implements IStorage {
-  async getUser(id: number): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user || undefined;
-  }
-
-  async getUserByEmail(email: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.email, email));
-    return user || undefined;
-  }
-
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
-    return user || undefined;
-  }
-
-  async getUserByFirebaseUid(firebaseUid: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.firebaseUid, firebaseUid));
-    return user || undefined;
-  }
-
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const [user] = await db
-      .insert(users)
-      .values({
-        ...insertUser,
-        password: await bcrypt.hash(insertUser.password, 10),
-        address: insertUser.address || null,
-        isWhatsApp: insertUser.isWhatsApp ?? false
-      })
-      .returning();
-    return user;
-  }
-
-  async updateUser(id: number, updates: Partial<User>): Promise<User | undefined> {
-    const [user] = await db
-      .update(users)
-      .set(updates)
-      .where(eq(users.id, id))
-      .returning();
-    return user || undefined;
-  }
-
-  async createSession(session: InsertSession): Promise<Session> {
-    const [newSession] = await db
-      .insert(sessions)
-      .values(session)
-      .returning();
-    return newSession;
-  }
-
-  async getSession(sessionToken: string): Promise<Session | undefined> {
-    const [session] = await db
-      .select()
-      .from(sessions)
-      .where(eq(sessions.sessionToken, sessionToken));
-    return session || undefined;
-  }
-
-  async deleteSession(sessionToken: string): Promise<void> {
-    await db.delete(sessions).where(eq(sessions.sessionToken, sessionToken));
-  }
-
-  async getOtpAttempts(identifier: string, type: string): Promise<OtpAttempt | undefined> {
-    const [attempt] = await db
-      .select()
-      .from(otpAttempts)
-      .where(and(eq(otpAttempts.identifier, identifier), eq(otpAttempts.type, type)));
-    return attempt || undefined;
-  }
-
-  async createOrUpdateOtpAttempts(attempt: InsertOtpAttempt): Promise<OtpAttempt> {
-    const existing = await this.getOtpAttempts(attempt.identifier, attempt.type);
-    
-    if (existing) {
-      const [updated] = await db
-        .update(otpAttempts)
-        .set({
-          attempts: attempt.attempts || existing.attempts,
-          lastAttempt: attempt.lastAttempt || existing.lastAttempt,
-          blockedUntil: attempt.blockedUntil || existing.blockedUntil
-        })
-        .where(eq(otpAttempts.id, existing.id))
-        .returning();
-      return updated;
-    } else {
-      const [newAttempt] = await db
-        .insert(otpAttempts)
-        .values({
-          ...attempt,
-          attempts: attempt.attempts || 0
-        })
-        .returning();
-      return newAttempt;
-    }
-  }
-
-  async createRoleData(roleDataInsert: InsertRoleData): Promise<RoleData> {
-    const [data] = await db
-      .insert(roleData)
-      .values(roleDataInsert)
-      .returning();
-    return data;
-  }
-
-  async getRoleDataByUser(userId: number): Promise<RoleData[]> {
-    return await db
-      .select()
-      .from(roleData)
-      .where(eq(roleData.userId, userId));
-  }
-
-  async isUsernameAvailable(username: string): Promise<boolean> {
-    const [user] = await db
-      .select({ id: users.id })
-      .from(users)
-      .where(eq(users.username, username));
-    return !user;
-  }
-
-  async isEmailAvailable(email: string): Promise<boolean> {
-    const [user] = await db
-      .select({ id: users.id })
-      .from(users)
-      .where(eq(users.email, email));
-    return !user;
-  }
-
-  async isPhoneAvailable(phone: string, countryCode: string): Promise<boolean> {
-    const [user] = await db
-      .select({ id: users.id })
-      .from(users)
-      .where(and(eq(users.phone, phone), eq(users.countryCode, countryCode)));
-    return !user;
-  }
-
-  async createCaptcha(insertCaptcha: InsertCaptcha): Promise<Captcha> {
-    const [captcha] = await db
-      .insert(captchas)
-      .values({
-        ...insertCaptcha,
-        attempts: insertCaptcha.attempts ?? 0,
-        solved: insertCaptcha.solved ?? false
-      })
-      .returning();
-    return captcha;
-  }
-
-  async getCaptcha(sessionId: string): Promise<Captcha | undefined> {
-    const [captcha] = await db
-      .select()
-      .from(captchas)
-      .where(eq(captchas.sessionId, sessionId));
-    return captcha || undefined;
-  }
-
-  async verifyCaptcha(sessionId: string, answer: string): Promise<boolean> {
-    const [captcha] = await db
-      .select()
-      .from(captchas)
-      .where(eq(captchas.sessionId, sessionId));
-
-    if (!captcha || captcha.solved || new Date() > captcha.expiresAt) {
-      return false;
-    }
-
-    const newAttempts = captcha.attempts + 1;
-    
-    if (captcha.answer.toLowerCase() === answer.toLowerCase()) {
-      await db
-        .update(captchas)
-        .set({ attempts: newAttempts, solved: true })
-        .where(eq(captchas.sessionId, sessionId));
-      return true;
-    }
-
-    if (newAttempts >= 3) {
-      await db.delete(captchas).where(eq(captchas.sessionId, sessionId));
-    } else {
-      await db
-        .update(captchas)
-        .set({ attempts: newAttempts })
-        .where(eq(captchas.sessionId, sessionId));
-    }
-
-    return false;
-  }
-
-  async cleanupExpiredCaptchas(): Promise<void> {
-    await db.delete(captchas).where(lt(captchas.expiresAt, new Date()));
-  }
-}
-
-// Use database storage if DATABASE_URL is available, otherwise fallback to memory storage
-export const storage = process.env.DATABASE_URL ? new DatabaseStorage() : new MemStorage();
+// Use memory storage for clean operation without database dependencies
+export const storage = new MemStorage();
