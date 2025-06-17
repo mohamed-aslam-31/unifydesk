@@ -38,7 +38,7 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Try to connect to PostgreSQL, fallback to in-memory storage
+  // Try to connect to PostgreSQL, then Replit Database, fallback to in-memory storage
   if (process.env.DATABASE_URL) {
     try {
       console.log("Attempting to connect to PostgreSQL database...");
@@ -47,11 +47,30 @@ app.use((req, res, next) => {
       await storage.getUser(1); // Test connection
       console.log("Connected to PostgreSQL database successfully");
     } catch (error) {
-      console.log("PostgreSQL connection failed, using in-memory storage");
+      console.log("PostgreSQL connection failed, trying Replit Database...");
       console.log("Database connection error:", error instanceof Error ? error.message : String(error));
+      
+      try {
+        // Import and test Replit Database storage
+        const { storage } = await import("./storage-replit.js");
+        await storage.getUser(1); // Test connection
+        console.log("Connected to Replit Database successfully");
+      } catch (replitError) {
+        console.log("Replit Database connection failed, using in-memory storage");
+        console.log("Replit Database error:", replitError instanceof Error ? replitError.message : String(replitError));
+      }
     }
   } else {
-    console.log("Using in-memory storage (data will reset on restart)");
+    try {
+      console.log("No PostgreSQL URL found, trying Replit Database...");
+      // Import and test Replit Database storage
+      const { storage } = await import("./storage-replit.js");
+      await storage.getUser(1); // Test connection
+      console.log("Connected to Replit Database successfully");
+    } catch (replitError) {
+      console.log("Replit Database connection failed, using in-memory storage");
+      console.log("Replit Database error:", replitError instanceof Error ? replitError.message : String(replitError));
+    }
   }
   
   const server = await registerRoutes(app);
