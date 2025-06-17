@@ -33,8 +33,17 @@ export interface AuthResponse {
 }
 
 export const signup = async (data: SignupData): Promise<AuthResponse> => {
-  const response = await apiRequest("POST", "/api/auth/signup", data);
-  return response.json();
+  console.log("Making signup API request with data:", data);
+  try {
+    const response = await apiRequest("POST", "/api/auth/signup", data);
+    console.log("Signup API response received:", response.status);
+    const result = await response.json();
+    console.log("Signup API result:", result);
+    return result;
+  } catch (error) {
+    console.error("Signup API error:", error);
+    throw error;
+  }
 };
 
 export const validateField = async (field: string, value: string): Promise<{ available: boolean }> => {

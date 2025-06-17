@@ -425,6 +425,9 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
 
 
   const onSubmit = async (data: z.infer<typeof signupSchema>) => {
+    console.log("Form submission started", { data, emailVerified, phoneVerified, captchaVerified, termsAccepted });
+    console.log("Form errors:", form.formState.errors);
+    
     if (!emailVerified || !phoneVerified) {
       toast({ title: "Please verify your email and phone number", variant: "destructive" });
       return;
@@ -443,16 +446,24 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
     }
 
     setIsSubmitting(true);
+    console.log("Submitting signup data:", { captchaSessionId, captchaAnswer });
+    
     try {
-      const result = await signup({ 
+      const signupData = { 
         ...data as SignupData,
         captchaSessionId,
         captchaAnswer,
         acceptTerms: termsAccepted
-      });
+      };
+      console.log("Final signup data:", signupData);
+      
+      const result = await signup(signupData);
+      console.log("Signup successful:", result);
+      
       onSuccess(result.sessionToken, result.user);
       toast({ title: "Account created successfully!" });
     } catch (error: any) {
+      console.error("Signup error:", error);
       toast({ 
         title: "Signup failed", 
         description: error.message || "Please try again",
