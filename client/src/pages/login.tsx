@@ -299,19 +299,16 @@ export default function LoginPage() {
     <Card className="shadow-xl bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border border-slate-200 dark:border-slate-700">
       <CardHeader className="text-center">
         <div className="flex items-center justify-center space-x-2 mb-2">
-          <Hand className="h-6 w-6 text-primary" />
           <CardTitle className="text-2xl font-bold text-slate-900 dark:text-white">
             Welcome Back
           </CardTitle>
+          <div className="animate-waving">
+            <Hand className="h-6 w-6 text-primary" />
+          </div>
         </div>
         <p className="text-slate-600 dark:text-slate-400">
           Sign in to your UnifyDesk account
         </p>
-        {currentStep === "login" && (
-          <div className="text-sm text-slate-500 dark:text-slate-400">
-            Session expires in: {formatTime(sessionTimer)}
-          </div>
-        )}
       </CardHeader>
       <CardContent className="space-y-6">
         <Form {...form}>
@@ -448,9 +445,6 @@ export default function LoginPage() {
         <p className="text-slate-600 dark:text-slate-400">
           Enter the 6-digit code sent to your registered contact
         </p>
-        <div className="text-sm text-slate-500 dark:text-slate-400">
-          Session expires in: {formatTime(otpTimer)}
-        </div>
       </CardHeader>
       <CardContent className="space-y-6">
         {maskedEmail && (
