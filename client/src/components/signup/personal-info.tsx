@@ -67,9 +67,9 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
       phone: "",
       countryCode: "+91",
       isWhatsApp: false,
-      gender: "male",
+      gender: "",
       dateOfBirth: "",
-      country: "",
+      country: "India",
       state: "",
       city: "",
       address: "",
@@ -83,14 +83,9 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
 
   // Load countries on mount and setup countdown timers
   useEffect(() => {
-    fetch("/api/locations/countries")
-      .then(res => res.json())
-      .then(data => {
-        if (data.data) {
-          setCountries(data.data);
-        }
-      })
-      .catch(err => console.error("Failed to load countries:", err));
+    // Set default country as India and load its states
+    setCountries([{ country: "India" }]);
+    handleCountryChange("India");
   }, []);
 
   // Email countdown timer
