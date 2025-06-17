@@ -1012,33 +1012,45 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
           </div>
 
           {/* Terms and Conditions */}
-          <div className={`${showTermsError && !termsAccepted ? 'border-2 border-red-500 rounded-lg p-3' : ''}`}>
-            <div className="flex items-start space-x-3">
-              <Checkbox
-                id="terms"
-                checked={termsAccepted}
-                onCheckedChange={(checked) => {
-                  setTermsAccepted(checked === true);
-                  if (checked) setShowTermsError(false);
-                }}
-                className={showTermsError && !termsAccepted ? 'border-red-500' : ''}
-              />
-              <Label htmlFor="terms" className="text-sm text-slate-600 dark:text-slate-400">
-                I agree to the{" "}
-                <button
-                  type="button"
-                  className="text-primary hover:text-primary/80 underline"
-                  onClick={() => setTermsModalOpen(true)}
-                >
-                  Terms of Service
-                </button>{" "}
-                and Privacy Policy
-              </Label>
-            </div>
-            {showTermsError && !termsAccepted && (
-              <p className="text-sm text-red-600 mt-2">Please accept the terms and conditions</p>
+          <FormField
+            control={form.control}
+            name="acceptTerms"
+            render={({ field }) => (
+              <FormItem>
+                <div className={`${showTermsError && !field.value ? 'border-2 border-red-500 rounded-lg p-3' : ''}`}>
+                  <div className="flex items-start space-x-3">
+                    <FormControl>
+                      <Checkbox
+                        id="terms"
+                        checked={field.value}
+                        onCheckedChange={(checked) => {
+                          field.onChange(checked === true);
+                          setTermsAccepted(checked === true);
+                          if (checked) setShowTermsError(false);
+                        }}
+                        className={showTermsError && !field.value ? 'border-red-500' : ''}
+                      />
+                    </FormControl>
+                    <Label htmlFor="terms" className="text-sm text-slate-600 dark:text-slate-400">
+                      I agree to the{" "}
+                      <button
+                        type="button"
+                        className="text-primary hover:text-primary/80 underline"
+                        onClick={() => setTermsModalOpen(true)}
+                      >
+                        Terms of Service
+                      </button>{" "}
+                      and Privacy Policy
+                    </Label>
+                  </div>
+                  {showTermsError && !field.value && (
+                    <p className="text-sm text-red-600 mt-2">Please accept the terms and conditions</p>
+                  )}
+                </div>
+                <FormMessage />
+              </FormItem>
             )}
-          </div>
+          />
 
           {/* Submit Button */}
           <Button
