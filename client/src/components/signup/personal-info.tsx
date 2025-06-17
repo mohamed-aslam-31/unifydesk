@@ -46,6 +46,8 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
   const [captchaVerified, setCaptchaVerified] = useState(false);
   const [captchaSessionId, setCaptchaSessionId] = useState("");
   const [captchaAnswer, setCaptchaAnswer] = useState("");
+  const [showCaptchaError, setShowCaptchaError] = useState(false);
+  const [showTermsError, setShowTermsError] = useState(false);
   const [countries, setCountries] = useState<any[]>([]);
   const [states, setStates] = useState<any[]>([]);
   const [cities, setCities] = useState<any[]>([]);
@@ -429,11 +431,13 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
     }
 
     if (!captchaVerified || !captchaSessionId || !captchaAnswer) {
+      setShowCaptchaError(true);
       toast({ title: "Please complete the security verification", variant: "destructive" });
       return;
     }
 
     if (!termsAccepted) {
+      setShowTermsError(true);
       toast({ title: "Please accept the terms and conditions", variant: "destructive" });
       return;
     }
@@ -958,28 +962,40 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
           </div>
 
           {/* Security Verification CAPTCHA */}
-          <VisualCaptcha
-            onVerified={(sessionId, answer) => {
-              setCaptchaVerified(true);
-              setCaptchaSessionId(sessionId);
-              setCaptchaAnswer(answer);
-              form.setValue("captchaSessionId", sessionId);
-              form.setValue("captchaAnswer", answer);
-            }}
-            onError={() => {
-              setCaptchaVerified(false);
-              setCaptchaSessionId("");
-              setCaptchaAnswer("");
-            }}
-          />
+          <div>
+            <VisualCaptcha
+              onVerified={(sessionId, answer) => {
+                setCaptchaVerified(true);
+                setCaptchaSessionId(sessionId);
+                setCaptchaAnswer(answer);
+                setShowCaptchaError(false);
+                form.setValue("captchaSessionId", sessionId);
+                form.setValue("captchaAnswer", answer);
+              }}
+              onError={() => {
+                setCaptchaVerified(false);
+                setCaptchaSessionId("");
+                setCaptchaAnswer("");
+                setShowCaptchaError(true);
+              }}
+              hasError={showCaptchaError && !captchaVerified}
+            />
+            {showCaptchaError && !captchaVerified && (
+              <p className="text-sm text-red-600 mt-2">Please verify the CAPTCHA</p>
+            )}
+          </div>
 
           {/* Terms and Conditions */}
-          <div>
+          <div className={`${showTermsError && !termsAccepted ? 'border-2 border-red-500 rounded-lg p-3' : ''}`}>
             <div className="flex items-start space-x-3">
               <Checkbox
                 id="terms"
                 checked={termsAccepted}
-                onCheckedChange={(checked) => setTermsAccepted(checked === true)}
+                onCheckedChange={(checked) => {
+                  setTermsAccepted(checked === true);
+                  if (checked) setShowTermsError(false);
+                }}
+                className={showTermsError && !termsAccepted ? 'border-red-500' : ''}
               />
               <Label htmlFor="terms" className="text-sm text-slate-600 dark:text-slate-400">
                 I agree to the{" "}
@@ -993,6 +1009,9 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
                 and Privacy Policy
               </Label>
             </div>
+            {showTermsError && !termsAccepted && (
+              <p className="text-sm text-red-600 mt-2">Please accept the terms and conditions</p>
+            )}
           </div>
 
           {/* Submit Button */}

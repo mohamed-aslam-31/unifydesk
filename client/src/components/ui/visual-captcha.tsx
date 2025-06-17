@@ -7,9 +7,10 @@ interface VisualCaptchaProps {
   onVerified: (sessionId: string, answer: string) => void;
   onError?: (error: string) => void;
   className?: string;
+  hasError?: boolean;
 }
 
-export function VisualCaptcha({ onVerified, onError, className }: VisualCaptchaProps) {
+export function VisualCaptcha({ onVerified, onError, className, hasError }: VisualCaptchaProps) {
   const [captchaText, setCaptchaText] = useState("");
   const [userInput, setUserInput] = useState("");
   const [error, setError] = useState("");
@@ -154,7 +155,7 @@ export function VisualCaptcha({ onVerified, onError, className }: VisualCaptchaP
 
   return (
     <div className={`space-y-4 ${className}`}>
-      <div className="bg-white dark:bg-slate-800 p-4 rounded-lg border-2 border-dashed border-slate-300 dark:border-slate-600">
+      <div className={`bg-white dark:bg-slate-800 p-4 rounded-lg border-2 border-dashed ${hasError || error ? 'border-red-500' : 'border-slate-300 dark:border-slate-600'}`}>
         <div className="flex items-center justify-between mb-3">
           <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
             captcha
