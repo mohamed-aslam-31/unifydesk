@@ -142,9 +142,8 @@ export class MemStorage implements IStorage {
       id: this.currentSessionId++,
       sessionToken: session.sessionToken,
       userId: session.userId,
-      expires: session.expires,
-      createdAt: new Date(),
-      updatedAt: new Date()
+      expiresAt: session.expiresAt,
+      createdAt: new Date()
     };
     
     this.sessions.set(sessionData.sessionToken, sessionData);
