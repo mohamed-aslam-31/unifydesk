@@ -65,7 +65,7 @@ export class MemStorage implements IStorage {
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    for (const user of this.users.values()) {
+    for (const user of Array.from(this.users.values())) {
       if (user.email === email) {
         return user;
       }
@@ -74,7 +74,7 @@ export class MemStorage implements IStorage {
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    for (const user of this.users.values()) {
+    for (const user of Array.from(this.users.values())) {
       if (user.username === username) {
         return user;
       }
@@ -83,7 +83,7 @@ export class MemStorage implements IStorage {
   }
 
   async getUserByFirebaseUid(firebaseUid: string): Promise<User | undefined> {
-    for (const user of this.users.values()) {
+    for (const user of Array.from(this.users.values())) {
       if (user.firebaseUid === firebaseUid) {
         return user;
       }
@@ -92,21 +92,30 @@ export class MemStorage implements IStorage {
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const hashedPassword = insertUser.password ? await bcrypt.hash(insertUser.password, 10) : null;
+    const hashedPassword = insertUser.password ? await bcrypt.hash(insertUser.password, 10) : insertUser.password;
     
     const user: User = {
       id: this.currentUserId++,
-      email: insertUser.email,
-      username: insertUser.username,
-      password: hashedPassword,
-      firstName: insertUser.firstName || null,
+      firstName: insertUser.firstName,
       lastName: insertUser.lastName || null,
-      phone: insertUser.phone || null,
-      countryCode: insertUser.countryCode || null,
-      role: insertUser.role,
-      isEmailVerified: insertUser.isEmailVerified ?? false,
-      isPhoneVerified: insertUser.isPhoneVerified ?? false,
+      username: insertUser.username,
+      email: insertUser.email,
+      phone: insertUser.phone,
+      countryCode: insertUser.countryCode,
+      isWhatsApp: insertUser.isWhatsApp || false,
+      gender: insertUser.gender,
+      dateOfBirth: insertUser.dateOfBirth,
+      country: insertUser.country,
+      state: insertUser.state,
+      city: insertUser.city,
+      address: insertUser.address || null,
+      password: hashedPassword,
       firebaseUid: insertUser.firebaseUid || null,
+      role: insertUser.role || null,
+      roleStatus: insertUser.roleStatus || 'pending',
+      emailVerified: insertUser.emailVerified ?? false,
+      phoneVerified: insertUser.phoneVerified ?? false,
+      profilePicture: insertUser.profilePicture || null,
       createdAt: new Date(),
       updatedAt: new Date()
     };
