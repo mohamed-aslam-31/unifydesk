@@ -1,10 +1,9 @@
 import bcrypt from 'bcryptjs';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, lt } from 'drizzle-orm';
 import { db } from './db';
-import { users, sessions, otpAttempts, roleData } from './schema';
-import type { User, NewUser, Session, NewSession, OtpAttempt, NewOtpAttempt, RoleData, NewRoleData } from './schema';
-import { User as SharedUser, Session as SharedSession, OtpAttempt as SharedOtpAttempt, RoleData as SharedRoleData, InsertUser, InsertSession, InsertOtpAttempt, InsertRoleData, InsertCaptcha } from '@shared/schema';
-import type { Captcha } from '@shared/schema';
+import { users, sessions, otpAttempts, roleData, captchas } from './schema';
+import type { User, NewUser, Session, NewSession, OtpAttempt, NewOtpAttempt, RoleData, NewRoleData, Captcha as PgCaptcha, NewCaptcha } from './schema';
+import { User as SharedUser, Session as SharedSession, OtpAttempt as SharedOtpAttempt, RoleData as SharedRoleData, InsertUser, InsertSession, InsertOtpAttempt, InsertRoleData, InsertCaptcha, Captcha } from '@shared/schema';
 
 export interface IStorage {
   // User methods
@@ -324,6 +323,19 @@ export class PostgreSQLStorage implements IStorage {
       role: data.role,
       data: data.data,
       createdAt: data.createdAt,
+    };
+  }
+
+  private convertCaptcha(captcha: PgCaptcha): Captcha {
+    return {
+      id: captcha.id,
+      sessionId: captcha.sessionId,
+      question: captcha.question,
+      answer: captcha.answer,
+      attempts: captcha.attempts,
+      solved: captcha.solved,
+      expiresAt: captcha.expiresAt,
+      createdAt: captcha.createdAt,
     };
   }
 }
