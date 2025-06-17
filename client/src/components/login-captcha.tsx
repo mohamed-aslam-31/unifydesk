@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { RefreshCw, Loader2 } from "lucide-react";
@@ -15,6 +15,7 @@ export function LoginCaptcha({ onValidation, resetTrigger }: LoginCaptchaProps) 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [isVerified, setIsVerified] = useState(false);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const generateCaptcha = async () => {
     setIsLoading(true);
