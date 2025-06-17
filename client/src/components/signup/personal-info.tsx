@@ -428,6 +428,15 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
     console.log("Form submission started", { data, emailVerified, phoneVerified, captchaVerified, termsAccepted });
     console.log("Form errors:", form.formState.errors);
     
+    // Force form validation to show field errors
+    await form.trigger();
+    
+    // Check for form field validation errors
+    if (Object.keys(form.formState.errors).length > 0) {
+      toast({ title: "Please fill in all required fields correctly", variant: "destructive" });
+      return;
+    }
+    
     if (!emailVerified || !phoneVerified) {
       toast({ title: "Please verify your email and phone number", variant: "destructive" });
       return;
@@ -489,7 +498,13 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
 
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <form 
+          onSubmit={form.handleSubmit(onSubmit, (errors) => {
+            console.log("Form validation errors:", errors);
+            toast({ title: "Please fill in all required fields correctly", variant: "destructive" });
+          })} 
+          className="space-y-6"
+        >
           {/* Name Fields */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormField
@@ -1030,25 +1045,6 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
             type="submit"
             className="w-full bg-primary hover:bg-primary/90"
             disabled={isSubmitting}
-            onClick={(e) => {
-              console.log("Submit button clicked");
-              console.log("Form state:", form.formState);
-              console.log("Form values:", form.getValues());
-              console.log("Form errors:", form.formState.errors);
-              console.log("Form is valid:", form.formState.isValid);
-              console.log("Validation states:", {
-                emailVerified,
-                phoneVerified,
-                captchaVerified,
-                termsAccepted
-              });
-              
-              // Check if form prevents submission
-              if (!form.formState.isValid) {
-                e.preventDefault();
-                console.log("Form submission prevented due to validation errors");
-              }
-            }}
           >
             {isSubmitting ? (
               <>
