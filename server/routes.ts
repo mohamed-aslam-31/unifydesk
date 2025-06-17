@@ -257,7 +257,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Signup endpoint
   app.post("/api/auth/signup", async (req, res) => {
     try {
-      const validatedData = signupSchema.parse(req.body) as Required<z.infer<typeof signupSchema>>;
+      const validatedData = signupSchema.parse(req.body);
       
       // Verify CAPTCHA first
       const captchaValid = await storage.verifyCaptcha(validatedData.captchaSessionId, validatedData.captchaAnswer);
@@ -284,7 +284,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create user with encrypted password
       const user = await storage.createUser({
         firstName: validatedData.firstName,
-        lastName: validatedData.lastName,
+        lastName: validatedData.lastName || null,
         username: validatedData.username,
         email: validatedData.email,
         phone: validatedData.phone,
@@ -295,7 +295,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         country: validatedData.country,
         state: validatedData.state,
         city: validatedData.city,
-        address: validatedData.address || undefined,
+        address: validatedData.address || null,
         password: validatedData.password, // Will be hashed in storage
         profilePicture: undefined,
       });

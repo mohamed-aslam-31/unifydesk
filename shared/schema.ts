@@ -7,7 +7,7 @@ import { createInsertSchema } from "drizzle-zod";
 export const users = pgTable('users', {
   id: serial('id').primaryKey(),
   firstName: varchar('first_name', { length: 100 }).notNull(),
-  lastName: varchar('last_name', { length: 100 }).notNull(),
+  lastName: varchar('last_name', { length: 100 }),
   username: varchar('username', { length: 50 }).notNull().unique(),
   email: varchar('email', { length: 255 }).notNull().unique(),
   phone: varchar('phone', { length: 20 }).notNull(),
