@@ -326,8 +326,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = signupSchema.parse(req.body);
       
+      // Debug logging for CAPTCHA verification
+      console.log("Signup CAPTCHA verification:", {
+        sessionId: validatedData.captchaSessionId,
+        answer: validatedData.captchaAnswer
+      });
+      
+      // Check if CAPTCHA exists and get its current state
+      const captcha = await storage.getCaptcha(validatedData.captchaSessionId || "");
+      console.log("CAPTCHA state:", captcha);
+      
       // Verify CAPTCHA first
       const captchaValid = await storage.verifyCaptcha(validatedData.captchaSessionId || "", validatedData.captchaAnswer || "");
+      console.log("CAPTCHA verification result:", captchaValid);
+      
       if (!captchaValid) {
         return res.status(400).json({ message: "Invalid CAPTCHA. Please try again." });
       }
