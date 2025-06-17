@@ -6,6 +6,7 @@ import { z } from "zod";
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import { captchaService } from "./captcha-service";
+import { indianStatesAndCities } from "./indian-locations";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // CAPTCHA generation endpoint
@@ -86,12 +87,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get countries/states/cities from external API
+  // Get countries - fixed to India only
   app.get("/api/locations/countries", async (req, res) => {
     try {
-      const response = await fetch("https://countriesnow.space/api/v0.1/countries");
-      const data = await response.json();
-      res.json(data);
+      res.json({
+        error: false,
+        msg: "countries and states data retrieved",
+        data: [{ country: "India" }]
+      });
     } catch (error) {
       console.error("Countries API error:", error);
       res.status(500).json({ message: "Failed to fetch countries" });
@@ -101,13 +104,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/locations/states", async (req, res) => {
     try {
       const { country } = req.body;
-      const response = await fetch("https://countriesnow.space/api/v0.1/countries/states", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ country }),
-      });
-      const data = await response.json();
-      res.json(data);
+      
+      if (country === "India") {
+        const states = Object.keys(indianStatesAndCities).map(state => ({ name: state }));
+        res.json({
+          error: false,
+          msg: `states in ${country} retrieved`,
+          data: { states }
+        });
+      } else {
+        res.json({
+          error: true,
+          msg: "Only India is supported",
+          data: { states: [] }
+        });
+      }
     } catch (error) {
       console.error("States API error:", error);
       res.status(500).json({ message: "Failed to fetch states" });
@@ -118,34 +129,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { country, state } = req.body;
       
-      // Static fallback data for common cities by state/country
-      const cityData: { [key: string]: { [key: string]: string[] } } = {
-        "India": {
-          "Delhi": ["New Delhi", "Central Delhi", "East Delhi", "North Delhi", "South Delhi", "West Delhi"],
-          "Maharashtra": ["Mumbai", "Pune", "Nagpur", "Thane", "Nashik", "Aurangabad", "Solapur", "Amravati"],
-          "Karnataka": ["Bangalore", "Mysore", "Mangalore", "Hubli", "Belgaum", "Davangere", "Shimoga"],
-          "Tamil Nadu": ["Chennai", "Coimbatore", "Madurai", "Tiruchirappalli", "Salem", "Tirunelveli", "Erode"],
-          "West Bengal": ["Kolkata", "Howrah", "Durgapur", "Asansol", "Siliguri", "Malda", "Bardhaman"],
-          "Gujarat": ["Ahmedabad", "Surat", "Vadodara", "Rajkot", "Bhavnagar", "Jamnagar", "Junagadh"],
-          "Rajasthan": ["Jaipur", "Jodhpur", "Kota", "Bikaner", "Ajmer", "Udaipur", "Bhilwara"],
-          "Punjab": ["Ludhiana", "Amritsar", "Jalandhar", "Patiala", "Bathinda", "Mohali", "Hoshiarpur"],
-        },
-        "United States": {
-          "California": ["Los Angeles", "San Francisco", "San Diego", "San Jose", "Fresno", "Sacramento", "Long Beach"],
-          "New York": ["New York City", "Buffalo", "Rochester", "Yonkers", "Syracuse", "Albany", "New Rochelle"],
-          "Texas": ["Houston", "San Antonio", "Dallas", "Austin", "Fort Worth", "El Paso", "Arlington"],
-          "Florida": ["Jacksonville", "Miami", "Tampa", "Orlando", "St. Petersburg", "Hialeah", "Tallahassee"],
-        },
-        "United Kingdom": {
-          "England": ["London", "Birmingham", "Manchester", "Liverpool", "Leeds", "Sheffield", "Bristol"],
-          "Scotland": ["Glasgow", "Edinburgh", "Aberdeen", "Dundee", "Stirling", "Perth", "Inverness"],
-          "Wales": ["Cardiff", "Swansea", "Newport", "Bangor", "St. Davids", "St. Asaph", "Wrexham"],
-        }
-      };
-
-      // Check if we have static data for this country and state
-      if (cityData[country] && cityData[country][state]) {
-        const cities = cityData[country][state];
+      if (country === "India" && state && indianStatesAndCities[state as keyof typeof indianStatesAndCities]) {
+        const cities = indianStatesAndCities[state as keyof typeof indianStatesAndCities];
         res.json({
           error: false,
           msg: "cities retrieved",
@@ -154,30 +139,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return;
       }
 
-      // Fallback: Try external API as backup
-      try {
-        const response = await fetch(`https://countriesnow.space/api/v0.1/countries/cities/q?country=${encodeURIComponent(country)}`);
-        
-        if (response.ok) {
-          const data = await response.json();
-          if (!data.error) {
-            res.json(data);
-            return;
-          }
-        }
-      } catch (apiError) {
-        console.log("External API unavailable, using fallback");
-      }
-
-      // If no static data and API fails, return common cities
-      const commonCities = [
-        "City Center", "Downtown", "Main District", "Central Area", "Business District"
-      ];
-      
+      // Return empty array for unsupported states
       res.json({
-        error: false,
-        msg: "cities retrieved (fallback)",
-        data: commonCities
+        error: true,
+        msg: "State not found or unsupported",
+        data: []
       });
       
     } catch (error) {

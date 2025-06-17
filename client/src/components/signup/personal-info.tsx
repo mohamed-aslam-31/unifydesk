@@ -67,7 +67,7 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
       phone: "",
       countryCode: "+91",
       isWhatsApp: false,
-      gender: "",
+      gender: undefined,
       dateOfBirth: "",
       country: "India",
       state: "",
