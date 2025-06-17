@@ -169,6 +169,23 @@ export default function LoginPage() {
 
       if (!response.ok) {
         const error = await response.json();
+        
+        // Handle specific error cases
+        if (response.status === 429) {
+          // Account blocked
+          setUserBlocked(true);
+          toast({
+            title: "Account Blocked",
+            description: error.message,
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        // Reset CAPTCHA on any error that requires it
+        setCaptchaValid(false);
+        setCaptchaSessionId("");
+        
         throw new Error(error.message || "Login failed");
       }
 
