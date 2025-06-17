@@ -448,6 +448,7 @@ export default function LoginPage() {
                       <Checkbox
                         checked={field.value}
                         onCheckedChange={field.onChange}
+                        className="h-3 w-3"
                       />
                     </FormControl>
                     <div className="space-y-1 leading-none">
