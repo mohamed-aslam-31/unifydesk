@@ -10,6 +10,7 @@ export interface IStorage {
   getUser(id: number): Promise<SharedUser | undefined>;
   getUserByEmail(email: string): Promise<SharedUser | undefined>;
   getUserByUsername(username: string): Promise<SharedUser | undefined>;
+  getUserByPhone(phone: string, countryCode: string): Promise<SharedUser | undefined>;
 
   createUser(user: InsertUser): Promise<SharedUser>;
   updateUser(id: number, updates: Partial<SharedUser>): Promise<SharedUser | undefined>;
@@ -30,6 +31,13 @@ export interface IStorage {
   // Validation methods
   isUsernameAvailable(username: string): Promise<boolean>;
   isEmailAvailable(email: string): Promise<boolean>;
+  isPhoneAvailable(phone: string, countryCode: string): Promise<boolean>;
+
+  // CAPTCHA methods
+  createCaptcha(captcha: InsertCaptcha): Promise<Captcha>;
+  getCaptcha(sessionId: string): Promise<Captcha | undefined>;
+  verifyCaptcha(sessionId: string, answer: string): Promise<boolean>;
+  cleanupExpiredCaptchas(): Promise<void>;
 }
 
 export class PostgreSQLStorage implements IStorage {
