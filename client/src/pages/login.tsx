@@ -13,7 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Eye, EyeOff, Loader2, AlertCircle, Hand, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { SimpleCaptcha } from "@/components/signup/simple-captcha";
+import { LoginCaptcha } from "@/components/login-captcha";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 
 const loginSchema = z.object({
@@ -383,8 +383,8 @@ export default function LoginPage() {
             />
 
             <div className="space-y-4">
-              <SimpleCaptcha
-                onValidation={(isValid, sessionId) => {
+              <LoginCaptcha
+                onValidation={(isValid: boolean, sessionId: string) => {
                   setCaptchaValid(isValid);
                   setCaptchaSessionId(sessionId);
                 }}

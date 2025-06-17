@@ -8,6 +8,25 @@ import bcrypt from "bcryptjs";
 import { captchaService } from "./captcha-service";
 import { indianStatesAndCities } from "./indian-locations";
 
+// Utility functions for masking sensitive data
+function maskEmail(email: string): string {
+  if (!email) return "";
+  const [username, domain] = email.split('@');
+  if (username.length <= 2) return `${username}@${domain}`;
+  return `${username.charAt(0)}${'*'.repeat(username.length - 2)}${username.charAt(username.length - 1)}@${domain}`;
+}
+
+function maskPhone(phone: string): string {
+  if (!phone) return "";
+  if (phone.length <= 4) return phone;
+  return `${phone.slice(0, 2)}${'*'.repeat(phone.length - 4)}${phone.slice(-2)}`;
+}
+
+// Declare global type for OTP sessions
+declare global {
+  var otpSessions: Map<string, any>;
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // CAPTCHA generation endpoint
   app.get("/api/captcha/generate", async (req, res) => {
@@ -475,50 +494,221 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Login endpoint
+  // Enhanced Login endpoint with email/phone support and CAPTCHA
   app.post("/api/auth/login", async (req, res) => {
     try {
-      const { email, password } = req.body;
+      const { identifier, password, captchaSessionId } = req.body;
       
-      if (!email || !password) {
-        return res.status(400).json({ message: "Email and password are required" });
+      if (!identifier || !password) {
+        return res.status(400).json({ message: "Email/phone and password are required" });
       }
 
-      const user = await storage.getUserByEmail(email);
+      if (!captchaSessionId) {
+        return res.status(400).json({ message: "CAPTCHA verification required" });
+      }
+
+      // Verify CAPTCHA
+      const captcha = await storage.getCaptcha(captchaSessionId);
+      if (!captcha || !captcha.solved || new Date() > captcha.expiresAt) {
+        return res.status(400).json({ message: "Invalid or expired CAPTCHA" });
+      }
+
+      // Determine if identifier is email or phone
+      const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier);
+      const isPhone = /^[+]?[\d\s\-\(\)]{10,}$/.test(identifier);
+      
+      if (!isEmail && !isPhone) {
+        return res.status(400).json({ message: "Please enter a valid email or phone number" });
+      }
+
+      // Find user by email or phone
+      let user;
+      if (isEmail) {
+        user = await storage.getUserByEmail(identifier);
+      } else {
+        // For phone, we need to search by phone number
+        // This is a simplified approach - in production you'd have proper phone indexing
+        const users = await storage.getAllUsers?.() || [];
+        user = users.find(u => u.phone === identifier);
+      }
+
       if (!user) {
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
-      // TODO: Verify password hash
-      if (user.password !== password) {
+      // Verify password using bcrypt
+      const isPasswordValid = await bcrypt.compare(password, user.password);
+      if (!isPasswordValid) {
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
-      // Create session
-      const sessionToken = crypto.randomBytes(32).toString('hex');
-      const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+      // Generate OTP for login verification
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
       
+      // Store OTP session data temporarily
+      const otpSessionId = crypto.randomBytes(32).toString('hex');
+      const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+      
+      // Store OTP data (in production, use Redis or similar)
+      global.otpSessions = global.otpSessions || new Map();
+      global.otpSessions.set(otpSessionId, {
+        userId: user.id,
+        otp,
+        expiresAt: otpExpiresAt,
+        attempts: 0,
+        maskedEmail: maskEmail(user.email),
+        maskedPhone: maskPhone(user.phone),
+        userRole: user.role,
+        roleStatus: user.roleStatus || 'pending'
+      });
+
+      // TODO: Send actual OTP via email/SMS
+      console.log(`Login OTP for ${user.email}: ${otp}`);
+
+      // Set session cookie for OTP verification
+      res.cookie('otpSessionId', otpSessionId, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 10 * 60 * 1000 // 10 minutes
+      });
+
+      res.json({
+        message: "OTP sent successfully",
+        maskedEmail: maskEmail(user.email),
+        maskedPhone: maskPhone(user.phone),
+        user: {
+          role: user.role,
+          roleStatus: user.roleStatus || 'pending'
+        }
+      });
+    } catch (error) {
+      console.error("Login error:", error);
+      res.status(500).json({ message: "Login failed" });
+    }
+  });
+
+  // OTP verification for login
+  app.post("/api/auth/verify-otp", async (req, res) => {
+    try {
+      const { otp } = req.body;
+      const otpSessionId = req.cookies?.otpSessionId;
+
+      if (!otp || !otpSessionId) {
+        return res.status(400).json({ message: "OTP and session required" });
+      }
+
+      global.otpSessions = global.otpSessions || new Map();
+      const otpSession = global.otpSessions.get(otpSessionId);
+
+      if (!otpSession) {
+        return res.status(400).json({ message: "Invalid OTP session" });
+      }
+
+      if (new Date() > otpSession.expiresAt) {
+        global.otpSessions.delete(otpSessionId);
+        return res.status(400).json({ message: "OTP expired" });
+      }
+
+      if (otpSession.attempts >= 5) {
+        global.otpSessions.delete(otpSessionId);
+        
+        // Block user for 5 hours
+        const blockedUntil = new Date(Date.now() + 5 * 60 * 60 * 1000);
+        await storage.createOrUpdateOtpAttempts({
+          identifier: otpSession.userId.toString(),
+          type: 'login',
+          attempts: 5,
+          lastAttempt: new Date(),
+          blockedUntil,
+        });
+
+        // TODO: Send notification email/SMS about account block
+        
+        return res.status(429).json({ 
+          message: "Account blocked due to too many failed attempts. Try again after 5 hours.",
+          blockedUntil 
+        });
+      }
+
+      if (otp !== otpSession.otp) {
+        otpSession.attempts += 1;
+        global.otpSessions.set(otpSessionId, otpSession);
+        
+        return res.status(400).json({ 
+          message: "Invalid OTP",
+          remainingAttempts: 5 - otpSession.attempts
+        });
+      }
+
+      // OTP verified successfully - create session
+      const sessionToken = crypto.randomBytes(32).toString('hex');
+      const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes
+      
+      const user = await storage.getUser(otpSession.userId);
+      if (!user) {
+        return res.status(400).json({ message: "User not found" });
+      }
+
       await storage.createSession({
         userId: user.id!,
         sessionToken,
         expiresAt,
       });
 
-      res.json({ 
-        message: "Login successful", 
+      // Clean up OTP session
+      global.otpSessions.delete(otpSessionId);
+      res.clearCookie('otpSessionId');
+
+      res.json({
+        message: "Login successful",
         sessionToken,
-        user: { 
-          id: user.id, 
-          firstName: user.firstName, 
-          lastName: user.lastName, 
+        user: {
+          id: user.id,
           email: user.email,
           role: user.role,
-          roleStatus: user.roleStatus
+          roleStatus: user.roleStatus || 'pending'
         }
       });
     } catch (error) {
-      console.error("Login error:", error);
-      res.status(500).json({ message: "Login failed" });
+      console.error("OTP verification error:", error);
+      res.status(500).json({ message: "OTP verification failed" });
+    }
+  });
+
+  // Resend OTP for login
+  app.post("/api/auth/resend-otp", async (req, res) => {
+    try {
+      const otpSessionId = req.cookies?.otpSessionId;
+
+      if (!otpSessionId) {
+        return res.status(400).json({ message: "No active OTP session" });
+      }
+
+      global.otpSessions = global.otpSessions || new Map();
+      const otpSession = global.otpSessions.get(otpSessionId);
+
+      if (!otpSession) {
+        return res.status(400).json({ message: "Invalid OTP session" });
+      }
+
+      // Generate new OTP
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      
+      // Update session with new OTP and reset attempts
+      otpSession.otp = otp;
+      otpSession.attempts = 0;
+      otpSession.expiresAt = new Date(Date.now() + 10 * 60 * 1000); // Reset 10 minutes
+      global.otpSessions.set(otpSessionId, otpSession);
+
+      // TODO: Send actual OTP via email/SMS
+      console.log(`Resent Login OTP: ${otp}`);
+
+      res.json({
+        message: "OTP resent successfully"
+      });
+    } catch (error) {
+      console.error("Resend OTP error:", error);
+      res.status(500).json({ message: "Failed to resend OTP" });
     }
   });
 
