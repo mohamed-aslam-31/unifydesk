@@ -17,7 +17,7 @@ export function VisualCaptcha({ onVerified, onError, className, hasError }: Visu
   const [sessionId, setSessionId] = useState("");
   const [verified, setVerified] = useState(false);
   const [loading, setLoading] = useState(false);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+
 
   const generateCaptcha = async () => {
     try {
@@ -32,8 +32,7 @@ export function VisualCaptcha({ onVerified, onError, className, hasError }: Visu
         setError("");
         setVerified(false);
         
-        // Draw captcha on canvas
-        setTimeout(() => drawCaptcha(data.question), 0);
+        // No need to draw on canvas for text questions
       } else {
         setError("Failed to generate CAPTCHA");
       }
@@ -44,69 +43,7 @@ export function VisualCaptcha({ onVerified, onError, className, hasError }: Visu
     }
   };
 
-  const drawCaptcha = (text: string) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
 
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    // Set canvas size
-    canvas.width = 200;
-    canvas.height = 80;
-
-    // Clear canvas with light background
-    ctx.fillStyle = '#f8f9fa';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // Add some noise lines for security
-    ctx.strokeStyle = '#e9ecef';
-    ctx.lineWidth = 1;
-    for (let i = 0; i < 8; i++) {
-      ctx.beginPath();
-      ctx.moveTo(Math.random() * canvas.width, Math.random() * canvas.height);
-      ctx.lineTo(Math.random() * canvas.width, Math.random() * canvas.height);
-      ctx.stroke();
-    }
-
-    // Draw the text
-    ctx.font = 'bold 24px monospace';
-    ctx.fillStyle = '#2d3748';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-
-    // Add slight rotation and positioning variation for each character
-    const centerX = canvas.width / 2;
-    const centerY = canvas.height / 2;
-    const spacing = 25;
-    const startX = centerX - (text.length - 1) * spacing / 2;
-
-    for (let i = 0; i < text.length; i++) {
-      ctx.save();
-      const x = startX + i * spacing;
-      const y = centerY + (Math.random() - 0.5) * 10;
-      const rotation = (Math.random() - 0.5) * 0.3;
-      
-      ctx.translate(x, y);
-      ctx.rotate(rotation);
-      ctx.fillText(text[i], 0, 0);
-      ctx.restore();
-    }
-
-    // Add some noise dots
-    ctx.fillStyle = '#a0aec0';
-    for (let i = 0; i < 30; i++) {
-      ctx.beginPath();
-      ctx.arc(
-        Math.random() * canvas.width,
-        Math.random() * canvas.height,
-        Math.random() * 2,
-        0,
-        2 * Math.PI
-      );
-      ctx.fill();
-    }
-  };
 
   useEffect(() => {
     generateCaptcha();
@@ -172,24 +109,21 @@ export function VisualCaptcha({ onVerified, onError, className, hasError }: Visu
           </Button>
         </div>
         
-        <canvas
-          ref={canvasRef}
-          className="border border-slate-200 dark:border-slate-600 rounded bg-white"
-          style={{ maxWidth: '100%', height: 'auto' }}
-        />
+        <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded border text-sm font-medium text-center">
+          {captchaText}
+        </div>
         
         <div className="mt-3">
           <p className="text-sm text-slate-600 dark:text-slate-400 mb-2">
-            Type the word above:
+            Answer the question above:
           </p>
           <div className="flex gap-2">
             <Input
               type="text"
-              placeholder="Enter captcha text"
+              placeholder="Enter your answer"
               value={userInput}
               onChange={handleInputChange}
               className="flex-1"
-              maxLength={6}
               autoComplete="off"
             />
             <Button
