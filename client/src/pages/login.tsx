@@ -150,7 +150,7 @@ export default function LoginPage() {
     if (!captchaValid) {
       toast({
         title: "CAPTCHA required",
-        description: "Please complete the CAPTCHA",
+        description: "Please complete the CAPTCHA verification",
         variant: "destructive",
       });
       return;

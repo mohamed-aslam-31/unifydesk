@@ -357,7 +357,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         phone: validatedData.phone,
         countryCode: validatedData.countryCode,
         isWhatsApp: validatedData.isWhatsApp,
-        gender: validatedData.gender || null,
+        gender: validatedData.gender || undefined,
         dateOfBirth: validatedData.dateOfBirth,
         country: validatedData.country,
         state: validatedData.state,
@@ -521,29 +521,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Please enter a valid email or phone number" });
       }
 
+      // Check if user is currently blocked
+      const loginAttempts = await storage.getOtpAttempts(identifier, 'login');
+      if (loginAttempts && loginAttempts.blockedUntil && new Date() < loginAttempts.blockedUntil) {
+        return res.status(429).json({ 
+          message: "Account temporarily blocked due to too many failed login attempts. Please try again later.",
+          blockedUntil: loginAttempts.blockedUntil
+        });
+      }
+
       // Find user by email or phone
       let user;
       if (isEmail) {
         user = await storage.getUserByEmail(identifier);
-      } else {
-        // For phone, find user by phone number
-        // Note: This is a simplified implementation
-        try {
-          const allUsers = await storage.getUser(1); // This is a workaround - we'll improve this later
-          user = null; // For now, only support email login
-        } catch {
-          user = null;
+        if (!user) {
+          return res.status(401).json({ message: "No user found with this email address" });
         }
-      }
-
-      if (!user) {
-        return res.status(401).json({ message: "Invalid credentials" });
+      } else {
+        // For phone number login - we need to implement getUserByPhone
+        user = null; // Temporarily disable phone login until we implement getUserByPhone
+        return res.status(401).json({ message: "No user found with this phone number" });
       }
 
       // Verify password using bcrypt
       const isPasswordValid = await bcrypt.compare(password, user.password);
       if (!isPasswordValid) {
-        return res.status(401).json({ message: "Invalid credentials" });
+        // Track failed login attempts
+        const currentAttempts = loginAttempts ? loginAttempts.attempts : 0;
+        const newAttempts = currentAttempts + 1;
+        
+        // Update or create login attempts record
+        await storage.createOrUpdateOtpAttempts({
+          identifier,
+          type: 'login',
+          attempts: newAttempts,
+          lastAttempt: new Date(),
+          blockedUntil: newAttempts >= 5 ? new Date(Date.now() + 5 * 60 * 60 * 1000) : null, // Block for 5 hours after 5 attempts
+        });
+
+        // Send warning after 3 attempts
+        if (newAttempts >= 3 && newAttempts < 5) {
+          const remainingAttempts = 5 - newAttempts;
+          return res.status(401).json({ 
+            message: `Incorrect password. You have ${remainingAttempts} attempt${remainingAttempts === 1 ? '' : 's'} remaining before your account will be temporarily blocked.`
+          });
+        } else if (newAttempts >= 5) {
+          // Account blocked - send notification
+          // TODO: Send email/SMS notification about account block
+          console.log(`Account blocked for ${identifier} due to too many failed login attempts`);
+          
+          return res.status(429).json({ 
+            message: "Account temporarily blocked due to too many failed login attempts. Please try again after 5 hours.",
+            blockedUntil: new Date(Date.now() + 5 * 60 * 60 * 1000)
+          });
+        } else {
+          return res.status(401).json({ message: "Incorrect password" });
+        }
+      }
+
+      // Reset login attempts on successful password verification
+      if (loginAttempts && loginAttempts.attempts > 0) {
+        await storage.createOrUpdateOtpAttempts({
+          identifier,
+          type: 'login',
+          attempts: 0,
+          lastAttempt: new Date(),
+          blockedUntil: null,
+        });
       }
 
       // Generate OTP for login verification
