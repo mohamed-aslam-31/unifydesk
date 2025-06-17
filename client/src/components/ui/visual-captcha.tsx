@@ -194,10 +194,10 @@ export function VisualCaptcha({ onVerified, onError, className }: VisualCaptchaP
             <Button
               type="button"
               onClick={handleVerify}
-              disabled={userInput.length === 0}
+              disabled={userInput.length === 0 || loading}
               className="px-6 bg-blue-600 hover:bg-blue-700 text-white"
             >
-              Verify
+              {loading ? "Verifying..." : "Verify"}
             </Button>
           </div>
         </div>
