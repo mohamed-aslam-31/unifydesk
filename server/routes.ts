@@ -336,12 +336,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const captcha = await storage.getCaptcha(validatedData.captchaSessionId || "");
       console.log("CAPTCHA state:", captcha);
       
-      // Verify CAPTCHA first
-      const captchaValid = await storage.verifyCaptcha(validatedData.captchaSessionId || "", validatedData.captchaAnswer || "");
-      console.log("CAPTCHA verification result:", captchaValid);
+      // Check if CAPTCHA was already solved (verified in the previous step)
+      if (!captcha) {
+        return res.status(400).json({ message: "Invalid CAPTCHA session. Please try again." });
+      }
+
+      if (new Date() > captcha.expiresAt) {
+        return res.status(400).json({ message: "CAPTCHA has expired. Please try again." });
+      }
+
+      if (!captcha.solved) {
+        return res.status(400).json({ message: "Please complete the CAPTCHA verification first." });
+      }
+
+      // Validate that the provided answer matches the solved captcha
+      const { captchaService } = await import("./captcha-service.js");
+      const answerMatches = captchaService.validateAnswer(validatedData.captchaAnswer || "", captcha.answer);
       
-      if (!captchaValid) {
-        return res.status(400).json({ message: "Invalid CAPTCHA. Please try again." });
+      if (!answerMatches) {
+        return res.status(400).json({ message: "CAPTCHA answer does not match. Please try again." });
       }
 
       // Verify terms acceptance
