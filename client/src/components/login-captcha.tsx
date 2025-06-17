@@ -18,6 +18,7 @@ export function LoginCaptcha({ onValidation, resetTrigger }: LoginCaptchaProps) 
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const generateCaptcha = async () => {
+    console.log("Generating new captcha...");
     setIsLoading(true);
     setError("");
     setUserAnswer("");
@@ -31,10 +32,12 @@ export function LoginCaptcha({ onValidation, resetTrigger }: LoginCaptchaProps) 
       }
       
       const data = await response.json();
+      console.log("New captcha data:", data);
       setCaptchaQuestion(data.question);
       setSessionId(data.sessionId);
       drawVisualCaptcha(data.question);
     } catch (error) {
+      console.error("Captcha generation error:", error);
       setError("Failed to load CAPTCHA. Please try again.");
     } finally {
       setIsLoading(false);
@@ -42,11 +45,18 @@ export function LoginCaptcha({ onValidation, resetTrigger }: LoginCaptchaProps) 
   };
 
   const drawVisualCaptcha = (text: string) => {
+    console.log("Drawing captcha:", text);
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas) {
+      console.error("Canvas ref not available");
+      return;
+    }
 
     const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+    if (!ctx) {
+      console.error("Canvas context not available");
+      return;
+    }
 
     // Set canvas size
     canvas.width = 200;
@@ -185,7 +195,10 @@ export function LoginCaptcha({ onValidation, resetTrigger }: LoginCaptchaProps) 
             type="button"
             variant="ghost"
             size="sm"
-            onClick={generateCaptcha}
+            onClick={() => {
+              console.log("Refresh button clicked");
+              generateCaptcha();
+            }}
             disabled={isLoading}
             className="p-2 h-8 w-8"
             title="Refresh captcha"
