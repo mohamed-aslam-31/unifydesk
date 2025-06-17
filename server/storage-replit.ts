@@ -313,33 +313,59 @@ export class ReplitStorage implements IStorage {
   }
 
   async verifyCaptcha(sessionId: string, answer: string): Promise<boolean> {
-    const captcha = await db.get(`captcha:${sessionId}`);
-    if (!captcha || new Date() > captcha.expiresAt) {
+    try {
+      const captcha = await db.get(`captcha:${sessionId}`);
+      if (!captcha || new Date() > captcha.expiresAt) {
+        return false;
+      }
+
+      // Validate input parameters
+      if (!answer || typeof answer !== 'string') {
+        console.log('Invalid answer provided:', answer);
+        return false;
+      }
+
+      // Validate captcha answer
+      if (!captcha.answer || typeof captcha.answer !== 'string') {
+        console.log('Invalid captcha answer in database:', captcha.answer);
+        return false;
+      }
+
+      console.log('CAPTCHA verification:', { 
+        sessionId, 
+        userAnswer: answer, 
+        correctAnswer: captcha.answer,
+        solved: captcha.solved 
+      });
+
+      // If already solved, just check if the answer matches (for signup verification)
+      if (captcha.solved) {
+        return captcha.answer.toLowerCase() === answer.toLowerCase();
+      }
+
+      const newAttempts = captcha.attempts + 1;
+      
+      if (captcha.answer.toLowerCase() === answer.toLowerCase()) {
+        captcha.attempts = newAttempts;
+        captcha.solved = true;
+        await db.set(`captcha:${sessionId}`, captcha);
+        console.log('CAPTCHA verified successfully');
+        return true;
+      }
+
+      if (newAttempts >= 3) {
+        await db.delete(`captcha:${sessionId}`);
+      } else {
+        captcha.attempts = newAttempts;
+        await db.set(`captcha:${sessionId}`, captcha);
+      }
+
+      console.log('CAPTCHA verification failed - wrong answer');
+      return false;
+    } catch (error) {
+      console.error('CAPTCHA verification error:', error);
       return false;
     }
-
-    // If already solved, just check if the answer matches (for signup verification)
-    if (captcha.solved) {
-      return captcha.answer.toLowerCase() === answer.toLowerCase();
-    }
-
-    const newAttempts = captcha.attempts + 1;
-    
-    if (captcha.answer.toLowerCase() === answer.toLowerCase()) {
-      captcha.attempts = newAttempts;
-      captcha.solved = true;
-      await db.set(`captcha:${sessionId}`, captcha);
-      return true;
-    }
-
-    if (newAttempts >= 3) {
-      await db.delete(`captcha:${sessionId}`);
-    } else {
-      captcha.attempts = newAttempts;
-      await db.set(`captcha:${sessionId}`, captcha);
-    }
-
-    return false;
   }
 
   async cleanupExpiredCaptchas(): Promise<void> {
