@@ -484,16 +484,21 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
   };
 
   return (
-    <Card className="shadow-xl">
-      <CardHeader className="text-center">
-        <CardTitle className="text-2xl font-bold text-slate-900 dark:text-white">
-          Create Your Account
+    <Card className="shadow-xl bg-white/95 dark:bg-slate-800/95 backdrop-blur border-0 min-w-[180px] mx-1 sm:mx-0">
+      <CardHeader className="text-center pb-2 sm:pb-6 px-2 sm:px-6">
+        <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-primary to-primary/80 rounded-xl mx-auto mb-2 sm:mb-4 flex items-center justify-center">
+          <svg className="w-6 h-6 sm:w-8 sm:h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          </svg>
+        </div>
+        <CardTitle className="text-lg sm:text-2xl font-bold text-slate-900 dark:text-white">
+          Create Account
         </CardTitle>
-        <p className="text-slate-600 dark:text-slate-400">
-          Join UnifyDesk and streamline your business operations
+        <p className="text-xs sm:text-base text-slate-600 dark:text-slate-400">
+          Join UnifyDesk
         </p>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-3 sm:space-y-6 px-2 sm:px-6 pb-4 sm:pb-6">
 
 
 
@@ -503,10 +508,10 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
             console.log("Form validation errors:", errors);
             toast({ title: "Please fill in all required fields correctly", variant: "destructive" });
           })} 
-          className="space-y-6"
+          className="space-y-3 sm:space-y-6"
         >
           {/* Name Fields */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4">
             <FormField
               control={form.control}
               name="firstName"
@@ -572,7 +577,7 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
           />
 
           {/* Gender and DOB */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4">
             <FormField
               control={form.control}
               name="gender"
@@ -694,13 +699,13 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
               <FormItem>
                 <FormLabel>Phone Number *</FormLabel>
                 <FormControl>
-                  <div className="flex space-x-2">
+                  <div className="flex space-x-1 sm:space-x-2">
                     <FormField
                       control={form.control}
                       name="countryCode"
                       render={({ field: countryCodeField }) => (
                         <Select onValueChange={countryCodeField.onChange} defaultValue={countryCodeField.value}>
-                          <SelectTrigger className="w-24">
+                          <SelectTrigger className="w-16 sm:w-24 text-xs sm:text-sm">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -799,9 +804,9 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
           )}
 
           {/* Location */}
-          <div className="space-y-4">
-            <h3 className="font-semibold text-slate-900 dark:text-white">Location Information</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="space-y-2 sm:space-y-4">
+            <h3 className="font-semibold text-slate-900 dark:text-white text-sm sm:text-base">Location Information</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4">
               <FormField
                 control={form.control}
                 name="country"
@@ -901,7 +906,7 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
           </div>
 
           {/* Password */}
-          <div className="space-y-4">
+          <div className="space-y-2 sm:space-y-4">
             <FormField
               control={form.control}
               name="password"
@@ -1055,13 +1060,13 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
           {/* Submit Button */}
           <Button
             type="submit"
-            className="w-full bg-primary hover:bg-primary/90"
+            className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-white font-semibold py-2 sm:py-3 text-sm sm:text-base shadow-lg hover:shadow-xl transition-all duration-300"
             disabled={isSubmitting}
           >
             {isSubmitting ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Creating Account...
+                <Loader2 className="mr-2 h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
+                <span className="text-xs sm:text-sm">Creating Account...</span>
               </>
             ) : (
               "Create Account"
