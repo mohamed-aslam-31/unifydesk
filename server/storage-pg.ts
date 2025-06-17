@@ -3,7 +3,8 @@ import { eq, and } from 'drizzle-orm';
 import { db } from './db';
 import { users, sessions, otpAttempts, roleData } from './schema';
 import type { User, NewUser, Session, NewSession, OtpAttempt, NewOtpAttempt, RoleData, NewRoleData } from './schema';
-import { User as SharedUser, Session as SharedSession, OtpAttempt as SharedOtpAttempt, RoleData as SharedRoleData, InsertUser, InsertSession, InsertOtpAttempt, InsertRoleData } from '@shared/schema';
+import { User as SharedUser, Session as SharedSession, OtpAttempt as SharedOtpAttempt, RoleData as SharedRoleData, InsertUser, InsertSession, InsertOtpAttempt, InsertRoleData, InsertCaptcha } from '@shared/schema';
+import type { Captcha } from '@shared/schema';
 
 export interface IStorage {
   // User methods
@@ -179,6 +180,35 @@ export class PostgreSQLStorage implements IStorage {
   async isEmailAvailable(email: string): Promise<boolean> {
     const result = await db.select().from(users).where(eq(users.email, email)).limit(1);
     return result.length === 0;
+  }
+
+  async isPhoneAvailable(phone: string, countryCode: string): Promise<boolean> {
+    const result = await db.select().from(users).where(
+      and(eq(users.phone, phone), eq(users.countryCode, countryCode))
+    ).limit(1);
+    return result.length === 0;
+  }
+
+  // CAPTCHA methods - delegate to Replit Database for now
+  async createCaptcha(captcha: InsertCaptcha): Promise<Captcha> {
+    // Import Replit storage for CAPTCHA operations
+    const { storage: replitStorage } = await import("./storage-replit.js");
+    return replitStorage.createCaptcha(captcha);
+  }
+
+  async getCaptcha(sessionId: string): Promise<Captcha | undefined> {
+    const { storage: replitStorage } = await import("./storage-replit.js");
+    return replitStorage.getCaptcha(sessionId);
+  }
+
+  async verifyCaptcha(sessionId: string, answer: string): Promise<boolean> {
+    const { storage: replitStorage } = await import("./storage-replit.js");
+    return replitStorage.verifyCaptcha(sessionId, answer);
+  }
+
+  async cleanupExpiredCaptchas(): Promise<void> {
+    const { storage: replitStorage } = await import("./storage-replit.js");
+    return replitStorage.cleanupExpiredCaptchas();
   }
 
   // Helper methods to convert PostgreSQL types to shared schema types

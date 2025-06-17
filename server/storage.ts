@@ -350,7 +350,10 @@ export const storage: IStorage = new Proxy({} as IStorage, {
         storageInstance = await storagePromise;
       }
       const method = (storageInstance as any)[prop];
-      return method.apply(storageInstance, args);
+      if (typeof method === 'function') {
+        return method.apply(storageInstance, args);
+      }
+      return method;
     };
   }
 });
