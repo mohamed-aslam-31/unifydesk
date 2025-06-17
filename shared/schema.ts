@@ -165,7 +165,7 @@ export const signupSchema = z.object({
   country: z.string().min(1, "Country is required"),
   state: z.string().min(1, "State is required"),
   city: z.string().min(1, "City is required"),
-  address: z.string().min(1, "Enter your address"),
+  address: z.string().optional(),
   password: z.string()
     .min(1, "Enter the password")
     .min(8, "Password must be at least 8 characters")
