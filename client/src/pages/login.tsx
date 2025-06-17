@@ -132,10 +132,31 @@ export default function LoginPage() {
       }
 
       const field = isEmail ? "email" : "phone";
+      let requestBody;
+      
+      if (isPhone) {
+        // For phone validation, extract country code and clean phone number
+        let countryCode = '+91';
+        let phoneNumber = value;
+        
+        if (value.startsWith('+')) {
+          const match = value.match(/^(\+\d{1,3})(.+)$/);
+          if (match) {
+            countryCode = match[1];
+            phoneNumber = match[2];
+          }
+        }
+        
+        phoneNumber = phoneNumber.replace(/\D/g, '');
+        requestBody = { field, value: phoneNumber, countryCode };
+      } else {
+        requestBody = { field, value };
+      }
+      
       const response = await fetch("/api/validate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ field, value }),
+        body: JSON.stringify(requestBody),
       });
 
       const result = await response.json();

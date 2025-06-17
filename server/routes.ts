@@ -539,20 +539,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       } else {
         // For phone login, extract country code and phone number
-        const phonePattern = /^(\+\d{1,3})?[\s\-]?(.+)$/;
-        const match = identifier.match(phonePattern);
+        let countryCode = '+91'; // Default country code
+        let phoneNumber = identifier;
         
-        if (match) {
-          const countryCode = match[1] || '+91'; // Default to +91 if no country code
-          const phoneNumber = match[2].replace(/[\s\-\(\)]/g, ''); // Clean phone number
-          
-          try {
-            user = await storage.getUserByPhone(phoneNumber, countryCode);
-          } catch (error) {
-            console.error('Error finding user by phone:', error);
-            user = null;
+        // Check if identifier starts with a country code
+        if (identifier.startsWith('+')) {
+          const match = identifier.match(/^(\+\d{1,3})(.+)$/);
+          if (match) {
+            countryCode = match[1];
+            phoneNumber = match[2];
           }
-        } else {
+        }
+        
+        // Clean phone number - remove all non-digit characters
+        phoneNumber = phoneNumber.replace(/\D/g, '');
+        
+        console.log('Attempting phone login:', { originalIdentifier: identifier, countryCode, cleanedPhone: phoneNumber });
+        
+        try {
+          user = await storage.getUserByPhone(phoneNumber, countryCode);
+          console.log('Phone lookup result:', user ? 'Found user' : 'No user found');
+        } catch (error) {
+          console.error('Error finding user by phone:', error);
           user = null;
         }
         
