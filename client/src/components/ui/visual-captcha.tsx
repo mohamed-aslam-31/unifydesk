@@ -156,7 +156,7 @@ export function VisualCaptcha({ onVerified, onError, className, hasError }: Visu
 
 
   return (
-    <div className={`space-y-4 ${className}`}>
+    <div className={`space-y-4 ${className}`} data-testid="visual-captcha">
       <div className={`bg-white dark:bg-slate-800 p-4 rounded-lg border-2 border-dashed ${hasError || error ? 'border-red-500' : 'border-slate-300 dark:border-slate-600'}`}>
         <div className="flex items-center justify-between mb-3">
           <span className="text-sm font-medium text-slate-700 dark:text-slate-300">

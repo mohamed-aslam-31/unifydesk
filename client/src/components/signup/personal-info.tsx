@@ -419,32 +419,63 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
 
 
 
+  // Auto-scroll to first error field
+  const scrollToError = (fieldName: string) => {
+    const element = document.querySelector(`[name="${fieldName}"]`);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // Focus the field
+      setTimeout(() => {
+        (element as HTMLInputElement).focus();
+      }, 500);
+    }
+  };
+
   const onSubmit = async (data: z.infer<typeof signupSchema>) => {
     console.log("Form submission started", { data, emailVerified, phoneVerified, captchaVerified, termsAccepted });
-    console.log("Form errors:", form.formState.errors);
     
     // Force form validation to show field errors
     await form.trigger();
     
     // Check for form field validation errors
-    if (Object.keys(form.formState.errors).length > 0) {
+    const errors = form.formState.errors;
+    if (Object.keys(errors).length > 0) {
+      // Scroll to first error field
+      const firstErrorField = Object.keys(errors)[0];
+      scrollToError(firstErrorField);
       toast({ title: "Please fill in all required fields correctly", variant: "destructive" });
       return;
     }
     
     if (!emailVerified || !phoneVerified) {
+      // Scroll to email field if not verified
+      if (!emailVerified) {
+        scrollToError("email");
+      } else if (!phoneVerified) {
+        scrollToError("phone");
+      }
       toast({ title: "Please verify your email and phone number", variant: "destructive" });
       return;
     }
 
     if (!captchaVerified || !captchaSessionId || !captchaAnswer) {
       setShowCaptchaError(true);
+      // Scroll to captcha section
+      const captchaElement = document.querySelector('[data-testid="visual-captcha"]');
+      if (captchaElement) {
+        captchaElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
       toast({ title: "Please complete the security verification", variant: "destructive" });
       return;
     }
 
     if (!termsAccepted) {
       setShowTermsError(true);
+      // Scroll to terms section
+      const termsElement = document.querySelector('#terms');
+      if (termsElement) {
+        termsElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
       toast({ title: "Please accept the terms and conditions", variant: "destructive" });
       return;
     }
@@ -695,23 +726,9 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
                 <FormLabel>Phone Number *</FormLabel>
                 <FormControl>
                   <div className="flex space-x-1 sm:space-x-2">
-                    <FormField
-                      control={form.control}
-                      name="countryCode"
-                      render={({ field: countryCodeField }) => (
-                        <Select onValueChange={countryCodeField.onChange} defaultValue={countryCodeField.value}>
-                          <SelectTrigger className="w-16 sm:w-24 text-xs sm:text-sm">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="+1">🇺🇸 +1</SelectItem>
-                            <SelectItem value="+91">🇮🇳 +91</SelectItem>
-                            <SelectItem value="+44">🇬🇧 +44</SelectItem>
-                            <SelectItem value="+86">🇨🇳 +86</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      )}
-                    />
+                    <div className="flex items-center px-3 py-2 border border-input bg-background rounded-md text-sm font-medium">
+                      🇮🇳 +91
+                    </div>
                     <div className="flex-1 relative">
                       <Input 
                         type="tel" 
@@ -1038,7 +1055,7 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
                         className="text-primary hover:text-primary/80 underline"
                         onClick={() => setTermsModalOpen(true)}
                       >
-                        Terms of Service
+                        Terms of Conditions
                       </button>{" "}
                       and Privacy Policy
                     </Label>
