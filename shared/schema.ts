@@ -173,8 +173,8 @@ export const signupSchema = z.object({
     .regex(/[0-9]/, "Password must contain at least one number")
     .regex(/[!@#$%^&*(),.?":{}|<>]/, "Password must contain at least one special character"),
   confirmPassword: z.string().min(1, "Enter the confirm password"),
-  captchaAnswer: z.string().min(1, "Please solve the CAPTCHA"),
-  captchaSessionId: z.string().min(1, "CAPTCHA session required"),
+  captchaAnswer: z.string().optional(),
+  captchaSessionId: z.string().optional(),
   acceptTerms: z.boolean().refine(val => val === true, {
     message: "You must accept the terms and conditions"
   })

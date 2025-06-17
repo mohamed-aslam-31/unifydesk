@@ -67,7 +67,7 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
       phone: "",
       countryCode: "+91",
       isWhatsApp: false,
-      gender: undefined,
+      gender: "male",
       dateOfBirth: "",
       country: "",
       state: "",
@@ -1030,6 +1030,25 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
             type="submit"
             className="w-full bg-primary hover:bg-primary/90"
             disabled={isSubmitting}
+            onClick={(e) => {
+              console.log("Submit button clicked");
+              console.log("Form state:", form.formState);
+              console.log("Form values:", form.getValues());
+              console.log("Form errors:", form.formState.errors);
+              console.log("Form is valid:", form.formState.isValid);
+              console.log("Validation states:", {
+                emailVerified,
+                phoneVerified,
+                captchaVerified,
+                termsAccepted
+              });
+              
+              // Check if form prevents submission
+              if (!form.formState.isValid) {
+                e.preventDefault();
+                console.log("Form submission prevented due to validation errors");
+              }
+            }}
           >
             {isSubmitting ? (
               <>
