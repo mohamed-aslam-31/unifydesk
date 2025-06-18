@@ -144,6 +144,8 @@ UnifyDesk is a comprehensive business management platform that serves as an e-co
 - June 17, 2025: Converted captcha system from text-based questions to visual character-based captcha with canvas rendering
 - June 17, 2025: Successfully migrated from Replit Agent to standard Replit environment with PostgreSQL database integration
 - June 18, 2025: Completed migration from Replit Agent to standard Replit environment with PostgreSQL database setup and all core functionality operational
+- June 18, 2025: Enhanced login OTP verification to send to both email and phone simultaneously, redesigned OTP page for better visibility and mobile responsiveness
+- June 18, 2025: Added 6 sample users to database for testing purposes with varied roles (customer, admin, shopkeeper, employee) and approval statuses
 
 ## User Preferences
 
