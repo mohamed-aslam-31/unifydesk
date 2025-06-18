@@ -282,7 +282,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/verify-otp", async (req, res) => {
     try {
-      const { identifier, type, otp } = req.body;
+      const { identifier, type, otp, sessionId } = req.body;
       
       if (!/^\d{6}$/.test(otp)) {
         return res.status(400).json({ message: "Invalid OTP format" });
@@ -301,12 +301,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       global.otpSessions = global.otpSessions || new Map();
       let otpSession: any = null;
       
-      // Find the OTP session for this identifier
-      global.otpSessions.forEach((session: any, sessionId: string) => {
-        if (session.identifier === identifier && session.type === type && !otpSession) {
-          otpSession = { sessionId, ...session };
+      // First try to find by sessionId if provided
+      if (sessionId) {
+        otpSession = global.otpSessions.get(sessionId);
+        if (otpSession) {
+          otpSession = { sessionId, ...otpSession };
         }
-      });
+      }
+      
+      // If not found by sessionId, find by identifier and type
+      if (!otpSession) {
+        global.otpSessions.forEach((session: any, id: string) => {
+          if (session.identifier === identifier && session.type === type && !otpSession) {
+            otpSession = { sessionId: id, ...session };
+          }
+        });
+      }
 
       if (!otpSession) {
         return res.status(400).json({ message: "No active OTP session. Please request a new OTP." });

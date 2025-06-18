@@ -51,8 +51,8 @@ export const validateField = async (field: string, value: string): Promise<{ ava
   return response.json();
 };
 
-export const sendOTP = async (identifier: string, type: "email" | "phone"): Promise<{ message: string; remainingAttempts: number }> => {
-  const response = await apiRequest("POST", "/api/auth/send-otp", { identifier, type });
+export const sendOTP = async (identifier: string, type: "email" | "phone"): Promise<{ message: string; remainingAttempts: number; sessionId: string }> => {
+  const response = await apiRequest("POST", "/api/send-otp", { identifier, type });
   return response.json();
 };
 
