@@ -56,12 +56,17 @@ export function ForgotPassword() {
   const [isCaptchaVerified, setIsCaptchaVerified] = useState(false);
   const [showVerifiedText, setShowVerifiedText] = useState(false);
   const [maskedIdentifier, setMaskedIdentifier] = useState('');
+  const [maskedEmail, setMaskedEmail] = useState('');
+  const [maskedPhone, setMaskedPhone] = useState('');
   const [otpAttempts, setOtpAttempts] = useState(0);
   const [resendTimer, setResendTimer] = useState(0);
   const [isBlocked, setIsBlocked] = useState(false);
   const [captchaMessageTimer, setCaptchaMessageTimer] = useState(0);
   const [validationErrorTimer, setValidationErrorTimer] = useState(0);
   const [showValidationError, setShowValidationError] = useState(true);
+  const [otpTimeLeft, setOtpTimeLeft] = useState(600); // 10 minutes for OTP session
+  const [showMessage, setShowMessage] = useState(false);
+  const [messageType, setMessageType] = useState<'success' | 'error'>('success');
 
   // Mask email and phone functions
   const maskEmail = (email: string) => {
@@ -122,6 +127,38 @@ export function ForgotPassword() {
     }
     return () => clearTimeout(timer);
   }, [validationErrorTimer]);
+
+  // OTP session timeout management (10 minutes)
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    
+    if (step === 'otp' && otpTimeLeft > 0) {
+      timer = setTimeout(() => {
+        setOtpTimeLeft(prev => {
+          if (prev <= 1) {
+            setError('OTP session expired. Please try again.');
+            setStep('email');
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    
+    return () => clearTimeout(timer);
+  }, [otpTimeLeft, step]);
+
+  // Auto-hide messages after 6 seconds with fade effect
+  useEffect(() => {
+    if (showMessage) {
+      const timer = setTimeout(() => {
+        setShowMessage(false);
+        setError('');
+        setSuccess('');
+      }, 6000);
+      return () => clearTimeout(timer);
+    }
+  }, [showMessage]);
 
   // Session timeout management (hidden as requested)
   useEffect(() => {
@@ -358,10 +395,29 @@ export function ForgotPassword() {
       const data = await response.json();
       if (response.ok) {
         setStep('otp');
+        setOtpTimeLeft(600); // Start 10-minute OTP session timer
         setSessionTimeout(0);
         setOtpAttempts(prev => prev + 1);
         setResendTimer(180); // 3 minutes
-        setSuccess(`Reset code sent to your ${identifierType === 'email' ? 'email and phone' : 'phone and email'}`);
+        setSuccess('Reset code sent to both email and phone');
+        setShowMessage(true);
+        setMessageType('success');
+        
+        // Store masked identifiers from response or generate from user data
+        if (data.maskedEmail) {
+          setMaskedEmail(data.maskedEmail);
+        }
+        if (data.maskedPhone) {
+          setMaskedPhone(data.maskedPhone);
+        }
+        // If not provided by server, mask the identifier
+        if (!data.maskedEmail && !data.maskedPhone) {
+          if (identifierType === 'email') {
+            setMaskedEmail(maskEmail(identifier));
+          } else {
+            setMaskedPhone(maskPhone(identifier));
+          }
+        }
         
         // Block account if 5+ attempts
         if (otpAttempts >= 4) {
@@ -420,33 +476,39 @@ export function ForgotPassword() {
 
     setLoading(true);
     setError('');
+    setSuccess('');
 
     try {
       const response = await fetch('/api/auth/verify-reset-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          identifier: identifier.trim(),
-          otp: otpCode,
-          type: identifierType
+          otp: otpCode
         })
       });
 
       const data = await response.json();
       if (response.ok) {
         setStep('reset');
+        setOtpTimeLeft(0); // Stop OTP timer
         setSessionTimeout(0);
-        setSuccess('OTP verified successfully! Please set your new password.');
+        setSuccess('OTP verified successfully! Redirecting to reset password...');
+        setShowMessage(true);
+        setMessageType('success');
         setError('');
         setOtpCode('');
         // Generate new captcha for reset step
         generateCaptcha();
       } else {
         setError(data.message || 'Invalid OTP. Please try again.');
+        setShowMessage(true);
+        setMessageType('error');
         setOtpCode('');
       }
     } catch (error) {
       setError('Network error. Please try again.');
+      setShowMessage(true);
+      setMessageType('error');
       setOtpCode('');
     } finally {
       setLoading(false);
