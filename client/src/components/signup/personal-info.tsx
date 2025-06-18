@@ -39,6 +39,8 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
   const [phoneLastSent, setPhoneLastSent] = useState<Date | null>(null);
   const [emailBlocked, setEmailBlocked] = useState(false);
   const [phoneBlocked, setPhoneBlocked] = useState(false);
+  const [emailAttempts, setEmailAttempts] = useState(0);
+  const [phoneAttempts, setPhoneAttempts] = useState(0);
   const [emailCountdown, setEmailCountdown] = useState(0);
   const [phoneCountdown, setPhoneCountdown] = useState(0);
   const [termsModalOpen, setTermsModalOpen] = useState(false);
@@ -390,6 +392,8 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
     }
   };
 
+
+
   const handleEmailOTPComplete = async (otp: string) => {
     const email = form.getValues("email");
     try {
@@ -397,9 +401,37 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
       setEmailVerified(true);
       setShowEmailOTP(false);
       setLastVerifiedEmail(email);
+      setEmailAttempts(0);
       toast({ title: "Email verified successfully" });
-    } catch (error) {
-      toast({ title: "Invalid OTP", variant: "destructive" });
+    } catch (error: any) {
+      try {
+        const errorData = JSON.parse(error.message);
+        setEmailAttempts(prev => prev + 1);
+        
+        if (errorData.showWarning) {
+          toast({ 
+            title: "Warning", 
+            description: errorData.message,
+            variant: "destructive" 
+          });
+        } else if (errorData.blockedUntil) {
+          setEmailBlocked(true);
+          setShowEmailOTP(false);
+          toast({ 
+            title: "Account blocked", 
+            description: "Too many failed attempts. Please try again after 5 hours.",
+            variant: "destructive" 
+          });
+        } else {
+          toast({ 
+            title: "Invalid OTP", 
+            description: `${errorData.remainingAttempts || 0} attempts remaining`,
+            variant: "destructive" 
+          });
+        }
+      } catch {
+        toast({ title: "Invalid OTP", variant: "destructive" });
+      }
     }
   };
 
@@ -411,9 +443,37 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
       setPhoneVerified(true);
       setShowPhoneOTP(false);
       setLastVerifiedPhone(phone);
+      setPhoneAttempts(0);
       toast({ title: "Phone verified successfully" });
-    } catch (error) {
-      toast({ title: "Invalid OTP", variant: "destructive" });
+    } catch (error: any) {
+      try {
+        const errorData = JSON.parse(error.message);
+        setPhoneAttempts(prev => prev + 1);
+        
+        if (errorData.showWarning) {
+          toast({ 
+            title: "Warning", 
+            description: errorData.message,
+            variant: "destructive" 
+          });
+        } else if (errorData.blockedUntil) {
+          setPhoneBlocked(true);
+          setShowPhoneOTP(false);
+          toast({ 
+            title: "Account blocked", 
+            description: "Too many failed attempts. Please try again after 5 hours.",
+            variant: "destructive" 
+          });
+        } else {
+          toast({ 
+            title: "Invalid OTP", 
+            description: `${errorData.remainingAttempts || 0} attempts remaining`,
+            variant: "destructive" 
+          });
+        }
+      } catch {
+        toast({ title: "Invalid OTP", variant: "destructive" });
+      }
     }
   };
 

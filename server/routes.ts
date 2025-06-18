@@ -299,10 +299,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Get stored OTP from global sessions
       global.otpSessions = global.otpSessions || new Map();
-      let otpSession = null;
+      let otpSession: any = null;
       
       // Find the OTP session for this identifier
-      global.otpSessions.forEach((session, sessionId) => {
+      global.otpSessions.forEach((session: any, sessionId: string) => {
         if (session.identifier === identifier && session.type === type && !otpSession) {
           otpSession = { sessionId, ...session };
         }
