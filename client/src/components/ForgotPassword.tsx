@@ -508,12 +508,6 @@ export function ForgotPassword() {
         </p>
       </CardHeader>
       <CardContent className="space-y-6">
-        {error && (
-          <Alert variant="destructive">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-        
         {success && (
           <Alert>
             <AlertDescription className="text-green-600">{success}</AlertDescription>
@@ -701,12 +695,6 @@ export function ForgotPassword() {
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
-        {error && (
-          <Alert variant="destructive">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-        
         {success && (
           <Alert>
             <AlertDescription className="text-green-600">{success}</AlertDescription>
@@ -798,12 +786,6 @@ export function ForgotPassword() {
         </p>
       </CardHeader>
       <CardContent className="space-y-6">
-        {error && (
-          <Alert variant="destructive">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-        
         {success && (
           <Alert>
             <AlertDescription className="text-green-600">{success}</AlertDescription>
