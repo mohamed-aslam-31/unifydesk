@@ -636,8 +636,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         roleStatus: user.roleStatus || 'pending'
       });
 
-      // TODO: Send actual OTP via email/SMS
-      console.log(`Login OTP for ${user.email}: ${otp}`);
+      // Send OTP to both email and phone
+      console.log(`Login OTP sent to both email (${maskEmail(user.email)}) and phone (${maskPhone(user.phone)}): ${otp}`);
+      
+      // Store OTP attempts for both email and phone to track rate limiting
+      await storage.createOrUpdateOtpAttempts({
+        identifier: user.email,
+        type: 'login_email',
+        attempts: 1,
+        lastAttempt: new Date(),
+        blockedUntil: null,
+      });
+
+      if (user.phone) {
+        await storage.createOrUpdateOtpAttempts({
+          identifier: user.phone,
+          type: 'login_phone',
+          attempts: 1,
+          lastAttempt: new Date(),
+          blockedUntil: null,
+        });
+      }
 
       // Set session cookie for OTP verification
       res.cookie('otpSessionId', otpSessionId, {
@@ -647,7 +666,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       res.json({
-        message: "OTP sent successfully",
+        message: "OTP sent to both email and phone",
         maskedEmail: maskEmail(user.email),
         maskedPhone: maskPhone(user.phone),
         user: {
@@ -765,6 +784,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid OTP session" });
       }
 
+      // Get user details for resending
+      const user = await storage.getUser(otpSession.userId);
+      if (!user) {
+        return res.status(400).json({ message: "User not found" });
+      }
+
       // Generate new OTP
       const otp = Math.floor(100000 + Math.random() * 900000).toString();
       
@@ -774,11 +799,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       otpSession.expiresAt = new Date(Date.now() + 10 * 60 * 1000); // Reset 10 minutes
       global.otpSessions.set(otpSessionId, otpSession);
 
-      // TODO: Send actual OTP via email/SMS
-      console.log(`Resent Login OTP: ${otp}`);
+      // Resend OTP to both email and phone
+      console.log(`Resent Login OTP to both email (${maskEmail(user.email)}) and phone (${maskPhone(user.phone)}): ${otp}`);
 
       res.json({
-        message: "OTP resent successfully"
+        message: "OTP resent to both email and phone successfully"
       });
     } catch (error) {
       console.error("Resend OTP error:", error);

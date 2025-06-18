@@ -500,22 +500,40 @@ export default function LoginPage() {
   );
 
   const renderOtpForm = () => (
-    <Card className="shadow-xl bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border border-slate-200 dark:border-slate-700">
-      <CardHeader className="text-center">
-        <CardTitle className="text-2xl font-bold text-slate-900 dark:text-white">
+    <Card className="w-full max-w-sm mx-auto shadow-xl bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm border border-slate-200 dark:border-slate-700">
+      <CardHeader className="text-center pb-4">
+        <CardTitle className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">
           Verify OTP
         </CardTitle>
-        <p className="text-slate-600 dark:text-slate-400">
-          Enter the 6-digit code sent to your registered contact
+        <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400">
+          Enter the 6-digit code sent to your contacts
         </p>
       </CardHeader>
-      <CardContent className="space-y-6">
-        {maskedEmail && (
-          <div className="text-center text-sm text-slate-600 dark:text-slate-400">
-            OTP sent to: {maskedEmail}
-            {maskedPhone && ` and ${maskedPhone}`}
+      <CardContent className="space-y-4 px-4 sm:px-6">
+        {/* Contact Information Display */}
+        <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-3 sm:p-4">
+          <div className="text-center space-y-2">
+            <p className="text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300">
+              OTP sent to both:
+            </p>
+            {maskedEmail && (
+              <div className="flex items-center justify-center space-x-2">
+                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                <span className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-mono">
+                  {maskedEmail}
+                </span>
+              </div>
+            )}
+            {maskedPhone && (
+              <div className="flex items-center justify-center space-x-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-mono">
+                  {maskedPhone}
+                </span>
+              </div>
+            )}
           </div>
-        )}
+        </div>
 
         <Form {...otpForm}>
           <form onSubmit={otpForm.handleSubmit(onOtpSubmit)} className="space-y-4">
@@ -524,17 +542,41 @@ export default function LoginPage() {
               name="otp"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>6-Digit OTP</FormLabel>
+                  <FormLabel className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                    6-Digit OTP Code
+                  </FormLabel>
                   <FormControl>
-                    <div className="flex justify-center">
-                      <InputOTP maxLength={6} {...field}>
-                        <InputOTPGroup>
-                          <InputOTPSlot index={0} />
-                          <InputOTPSlot index={1} />
-                          <InputOTPSlot index={2} />
-                          <InputOTPSlot index={3} />
-                          <InputOTPSlot index={4} />
-                          <InputOTPSlot index={5} />
+                    <div className="flex justify-center px-2">
+                      <InputOTP 
+                        maxLength={6} 
+                        {...field}
+                        className="gap-1 sm:gap-2"
+                      >
+                        <InputOTPGroup className="gap-1 sm:gap-2">
+                          <InputOTPSlot 
+                            index={0} 
+                            className="w-8 h-8 sm:w-12 sm:h-12 text-sm sm:text-lg font-bold border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200" 
+                          />
+                          <InputOTPSlot 
+                            index={1} 
+                            className="w-8 h-8 sm:w-12 sm:h-12 text-sm sm:text-lg font-bold border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200" 
+                          />
+                          <InputOTPSlot 
+                            index={2} 
+                            className="w-8 h-8 sm:w-12 sm:h-12 text-sm sm:text-lg font-bold border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200" 
+                          />
+                          <InputOTPSlot 
+                            index={3} 
+                            className="w-8 h-8 sm:w-12 sm:h-12 text-sm sm:text-lg font-bold border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200" 
+                          />
+                          <InputOTPSlot 
+                            index={4} 
+                            className="w-8 h-8 sm:w-12 sm:h-12 text-sm sm:text-lg font-bold border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200" 
+                          />
+                          <InputOTPSlot 
+                            index={5} 
+                            className="w-8 h-8 sm:w-12 sm:h-12 text-sm sm:text-lg font-bold border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200" 
+                          />
                         </InputOTPGroup>
                       </InputOTP>
                     </div>
@@ -544,58 +586,71 @@ export default function LoginPage() {
               )}
             />
 
-            <div className="text-center">
+            {/* Timer and Resend Section */}
+            <div className="text-center py-2">
               {resendTimer > 0 ? (
-                <p className="text-sm text-slate-500 dark:text-slate-400">
-                  Resend OTP in {formatTime(resendTimer)}
-                </p>
+                <div className="space-y-1">
+                  <p className="text-sm text-slate-500 dark:text-slate-400">
+                    Resend available in
+                  </p>
+                  <p className="text-lg font-mono font-semibold text-primary">
+                    {formatTime(resendTimer)}
+                  </p>
+                </div>
               ) : (
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   onClick={resendOtp}
-                  className="text-primary hover:text-primary/80"
+                  className="text-primary hover:text-primary/80 border-primary/20 hover:border-primary/40"
                 >
                   <RefreshCw className="mr-2 h-4 w-4" />
-                  Resend OTP
+                  Resend OTP to Both
                 </Button>
               )}
             </div>
 
+            {/* Error Alert */}
             {otpAttempts > 0 && (
-              <Alert variant="destructive">
+              <Alert variant="destructive" className="border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20">
                 <AlertCircle className="h-4 w-4" />
-                <AlertDescription>
-                  {otpAttempts >= 4 ? "Account will be blocked after one more failed attempt." : `${5 - otpAttempts} attempts remaining.`}
+                <AlertDescription className="text-xs sm:text-sm">
+                  {otpAttempts >= 4 
+                    ? "⚠️ Account will be blocked after one more failed attempt." 
+                    : `${5 - otpAttempts} attempts remaining before account lock.`
+                  }
                 </AlertDescription>
               </Alert>
             )}
 
+            {/* Submit Button */}
             <Button
               type="submit"
-              className="w-full bg-primary hover:bg-primary/90"
+              className="w-full bg-primary hover:bg-primary/90 text-white font-semibold py-2 sm:py-3 text-sm sm:text-base transition-all duration-200"
               disabled={isSubmitting || otpAttempts >= 5}
             >
               {isSubmitting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Verifying...
+                  Verifying OTP...
                 </>
               ) : (
-                "Verify OTP"
+                "Verify OTP Code"
               )}
             </Button>
           </form>
         </Form>
 
-        <div className="text-center">
+        {/* Back Button */}
+        <div className="text-center pt-2">
           <Button
             variant="ghost"
+            size="sm"
             onClick={() => setCurrentStep("login")}
-            className="text-slate-600 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
+            className="text-slate-600 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 text-xs sm:text-sm"
           >
-            Back to Login
+            ← Back to Login
           </Button>
         </div>
       </CardContent>
@@ -608,8 +663,8 @@ export default function LoginPage() {
       <FloatingBackground className="opacity-30 dark:opacity-20" />
       
       <Header />
-      <main className="flex-1 flex items-center justify-center py-12 relative z-10">
-        <div className="w-full max-w-md px-4">
+      <main className="flex-1 flex items-center justify-center py-4 sm:py-8 lg:py-12 relative z-10 min-h-[calc(100vh-200px)]">
+        <div className="w-full max-w-sm sm:max-w-md px-3 sm:px-4">
           {currentStep === "login" && renderLoginForm()}
           {currentStep === "otp" && renderOtpForm()}
         </div>
