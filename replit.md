@@ -147,6 +147,7 @@ UnifyDesk is a comprehensive business management platform that serves as an e-co
 - June 18, 2025: Enhanced login OTP verification to send to both email and phone simultaneously, redesigned OTP page for better visibility and mobile responsiveness
 - June 18, 2025: Added 6 sample users to database for testing purposes with varied roles (customer, admin, shopkeeper, employee) and approval statuses
 - June 18, 2025: Enhanced login page with validation error messages ("No user matches this email ID/phone number") under input fields, updated placeholder text to remove "number", and improved OTP input boxes to 12x12px size with better mobile responsiveness for both login and signup pages
+- June 18, 2025: Added auto-fade feature to login validation errors - error messages now automatically fade out smoothly after 5 seconds using CSS transitions
 
 ## User Preferences
 

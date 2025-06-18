@@ -46,6 +46,7 @@ export default function LoginPage() {
   const [captchaSessionId, setCaptchaSessionId] = useState("");
   const [isValidating, setIsValidating] = useState(false);
   const [validationStatus, setValidationStatus] = useState<"valid" | "invalid" | "">("");
+  const [showValidationError, setShowValidationError] = useState(true);
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
@@ -163,6 +164,14 @@ export default function LoginPage() {
 
       const result = await response.json();
       setValidationStatus(result.available ? "invalid" : "valid");
+      
+      // Show error and set timer to hide it after 5 seconds
+      if (result.available) {
+        setShowValidationError(true);
+        setTimeout(() => {
+          setShowValidationError(false);
+        }, 5000);
+      }
     } catch (error) {
       setValidationStatus("");
     }
@@ -383,7 +392,11 @@ export default function LoginPage() {
                     </div>
                   </FormControl>
                   {!isValidating && validationStatus === "invalid" && field.value && (
-                    <div className="text-red-500 text-xs mt-1 bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded">
+                    <div 
+                      className={`text-red-500 text-xs mt-1 bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded transition-opacity duration-500 ${
+                        showValidationError ? 'opacity-100' : 'opacity-0'
+                      }`}
+                    >
                       {/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(field.value) ? "No user matches this email ID" : "No user matches this phone number"}
                     </div>
                   )}
