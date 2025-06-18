@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
+import { Header } from './header';
+import { Footer } from './footer';
+import { FloatingBackground } from './floating-background';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Alert, AlertDescription } from './ui/alert';
-import { Eye, EyeOff, ArrowLeft, CheckCircle, XCircle } from 'lucide-react';
+import { Eye, EyeOff, ArrowLeft, CheckCircle, XCircle, RefreshCw } from 'lucide-react';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from './ui/input-otp';
 
 interface CaptchaData {
@@ -51,7 +54,7 @@ export function ForgotPassword() {
     meets: { length: false, uppercase: false, number: false, special: false }
   });
 
-  // Session timeout management
+  // Session timeout management (hidden as requested)
   useEffect(() => {
     let timer: NodeJS.Timeout;
     
@@ -371,36 +374,375 @@ export function ForgotPassword() {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
-      <Card className="w-full max-w-md mx-4">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold text-gray-900">
-            {step === 'email' && 'Forgot Password'}
-            {step === 'otp' && 'Verify OTP'}
-            {step === 'reset' && 'Reset Password'}
-            {step === 'success' && 'Password Reset'}
-          </CardTitle>
-          {(step === 'email' || step === 'reset') && sessionTimeout > 0 && (
-            <div className="text-sm text-gray-600">
-              Session expires in: {formatTime(sessionTimeout)}
-            </div>
-          )}
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-          
-          {success && (
-            <Alert>
-              <AlertDescription className="text-green-600">{success}</AlertDescription>
-            </Alert>
-          )}
+  const renderEmailForm = () => (
+    <Card className="w-full bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border-slate-200 dark:border-slate-700 shadow-xl">
+      <CardHeader className="text-center pb-6">
+        <CardTitle className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+          Forgot Password
+        </CardTitle>
+        <p className="text-slate-600 dark:text-slate-400 text-sm mt-2">
+          Enter your email or phone to reset your password
+        </p>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {error && (
+          <Alert variant="destructive">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+        
+        {success && (
+          <Alert>
+            <AlertDescription className="text-green-600">{success}</AlertDescription>
+          </Alert>
+        )}
 
-          {step === 'email' && (
+        <form onSubmit={handleEmailSubmit} className="space-y-4">
+          <div>
+            <Label htmlFor="identifier" className="text-slate-700 dark:text-slate-300">Email or Phone Number</Label>
+            <div className="relative">
+              <Input
+                id="identifier"
+                type="text"
+                placeholder="Enter email or phone number"
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
+                className="pr-10 bg-white/50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600"
+                required
+              />
+              <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                {isValidating ? (
+                  <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                ) : identifier && (
+                  isValidIdentifier ? (
+                    <CheckCircle className="w-4 h-4 text-green-500" />
+                  ) : (
+                    <XCircle className="w-4 h-4 text-red-500" />
+                  )
+                )}
+              </div>
+            </div>
+            {identifier && !isValidating && !isValidIdentifier && (
+              <p className="text-sm text-red-600 mt-1">
+                No account found with this {identifier.includes('@') ? 'email' : 'phone number'}
+              </p>
+            )}
+          </div>
+
+          <div>
+            <Label htmlFor="captcha" className="text-slate-700 dark:text-slate-300">Captcha</Label>
+            <div className="flex items-center space-x-2 mb-2">
+              {captchaCanvas && (
+                <img 
+                  src={captchaCanvas} 
+                  alt="Captcha" 
+                  className="border rounded bg-white"
+                />
+              )}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={generateCaptcha}
+                className="border-slate-300 dark:border-slate-600"
+              >
+                <RefreshCw className="w-4 h-4" />
+              </Button>
+            </div>
+            <Input
+              id="captcha"
+              type="text"
+              placeholder="Enter captcha"
+              value={captchaAnswer}
+              onChange={(e) => setCaptchaAnswer(e.target.value)}
+              className="bg-white/50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600"
+              required
+            />
+          </div>
+
+          <div className="flex space-x-3 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setLocation('/login')}
+              className="flex-1 border-slate-300 dark:border-slate-600"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Login
+            </Button>
+            <Button
+              type="submit"
+              disabled={!isValidIdentifier || !captchaAnswer.trim() || loading}
+              className="flex-1"
+            >
+              {loading ? 'Sending...' : 'Continue'}
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
+  );
+
+  const renderOtpForm = () => (
+    <Card className="w-full bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border-slate-200 dark:border-slate-700 shadow-xl">
+      <CardHeader className="text-center pb-6">
+        <CardTitle className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+          Verify OTP
+        </CardTitle>
+        <p className="text-slate-600 dark:text-slate-400 text-sm mt-2">
+          Enter the 6-digit code sent to your {identifierType}
+        </p>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {error && (
+          <Alert variant="destructive">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+        
+        {success && (
+          <Alert>
+            <AlertDescription className="text-green-600">{success}</AlertDescription>
+          </Alert>
+        )}
+
+        <form onSubmit={handleOtpSubmit} className="space-y-6">
+          <div className="flex justify-center">
+            <InputOTP
+              maxLength={6}
+              value={otpCode}
+              onChange={setOtpCode}
+              className="gap-2"
+            >
+              <InputOTPGroup className="gap-2">
+                <InputOTPSlot index={0} className="w-12 h-12 text-lg font-semibold bg-white/50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600" />
+                <InputOTPSlot index={1} className="w-12 h-12 text-lg font-semibold bg-white/50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600" />
+                <InputOTPSlot index={2} className="w-12 h-12 text-lg font-semibold bg-white/50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600" />
+              </InputOTPGroup>
+              <InputOTPGroup className="gap-2">
+                <InputOTPSlot index={3} className="w-12 h-12 text-lg font-semibold bg-white/50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600" />
+                <InputOTPSlot index={4} className="w-12 h-12 text-lg font-semibold bg-white/50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600" />
+                <InputOTPSlot index={5} className="w-12 h-12 text-lg font-semibold bg-white/50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600" />
+              </InputOTPGroup>
+            </InputOTP>
+          </div>
+
+          <div className="flex space-x-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setStep('email')}
+              className="flex-1 border-slate-300 dark:border-slate-600"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back
+            </Button>
+            <Button
+              type="submit"
+              disabled={otpCode.length !== 6 || loading}
+              className="flex-1"
+            >
+              {loading ? 'Verifying...' : 'Verify'}
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
+  );
+
+  const renderResetForm = () => (
+    <Card className="w-full bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border-slate-200 dark:border-slate-700 shadow-xl">
+      <CardHeader className="text-center pb-6">
+        <CardTitle className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+          Reset Password
+        </CardTitle>
+        <p className="text-slate-600 dark:text-slate-400 text-sm mt-2">
+          Enter your new password
+        </p>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {error && (
+          <Alert variant="destructive">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+        
+        {success && (
+          <Alert>
+            <AlertDescription className="text-green-600">{success}</AlertDescription>
+          </Alert>
+        )}
+
+        <form onSubmit={handlePasswordReset} className="space-y-4">
+          <div>
+            <Label htmlFor="password" className="text-slate-700 dark:text-slate-300">New Password</Label>
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? 'text' : 'password'}
+                placeholder="Enter new password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="pr-10 bg-white/50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600"
+                required
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </Button>
+            </div>
+            {passwordStrength.feedback.length > 0 && (
+              <div className="mt-2 space-y-1">
+                {passwordStrength.feedback.map((feedback, index) => (
+                  <p
+                    key={index}
+                    className={`text-xs ${
+                      index === 0
+                        ? passwordStrength.score < 2
+                          ? 'text-red-600'
+                          : passwordStrength.score < 3
+                          ? 'text-yellow-600'
+                          : 'text-green-600'
+                        : 'text-slate-600 dark:text-slate-400'
+                    }`}
+                  >
+                    {feedback}
+                  </p>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div>
+            <Label htmlFor="confirmPassword" className="text-slate-700 dark:text-slate-300">Confirm Password</Label>
+            <div className="relative">
+              <Input
+                id="confirmPassword"
+                type={showConfirmPassword ? 'text' : 'password'}
+                placeholder="Confirm new password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="pr-10 bg-white/50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600"
+                required
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              >
+                {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </Button>
+            </div>
+          </div>
+
+          <div>
+            <Label htmlFor="resetCaptcha" className="text-slate-700 dark:text-slate-300">Captcha</Label>
+            <div className="flex items-center space-x-2 mb-2">
+              {captchaCanvas && (
+                <img 
+                  src={captchaCanvas} 
+                  alt="Captcha" 
+                  className="border rounded bg-white"
+                />
+              )}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={generateCaptcha}
+                className="border-slate-300 dark:border-slate-600"
+              >
+                <RefreshCw className="w-4 h-4" />
+              </Button>
+            </div>
+            <Input
+              id="resetCaptcha"
+              type="text"
+              placeholder="Enter captcha"
+              value={captchaAnswer}
+              onChange={(e) => setCaptchaAnswer(e.target.value)}
+              className="bg-white/50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600"
+              required
+            />
+          </div>
+
+          <div className="flex space-x-3 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setStep('otp')}
+              className="flex-1 border-slate-300 dark:border-slate-600"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back
+            </Button>
+            <Button
+              type="submit"
+              disabled={password !== confirmPassword || passwordStrength.score < 2 || !captchaAnswer.trim() || loading}
+              className="flex-1"
+            >
+              {loading ? 'Resetting...' : 'Reset Password'}
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
+  );
+
+  const renderSuccessForm = () => (
+    <Card className="w-full bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border-slate-200 dark:border-slate-700 shadow-xl">
+      <CardHeader className="text-center pb-6">
+        <CardTitle className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+          Password Reset
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-6 text-center">
+        <div className="flex justify-center">
+          <CheckCircle className="w-16 h-16 text-green-500" />
+        </div>
+        <div>
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2">
+            Password Reset Successfully!
+          </h3>
+          <p className="text-slate-600 dark:text-slate-400">
+            Your password has been updated. You can now login with your new password.
+          </p>
+        </div>
+        <Button
+          onClick={() => setLocation('/login')}
+          className="w-full"
+        >
+          Back to Login
+        </Button>
+      </CardContent>
+    </Card>
+  );
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 transition-all duration-300 relative overflow-hidden">
+      {/* Three.js Floating Background */}
+      <FloatingBackground className="opacity-30 dark:opacity-20" />
+      
+      <Header />
+      <main className="flex-1 flex items-center justify-center py-4 sm:py-8 lg:py-12 relative z-10 min-h-[calc(100vh-200px)]">
+        <div className="w-full max-w-sm sm:max-w-md px-3 sm:px-4">
+          {step === 'email' && renderEmailForm()}
+          {step === 'otp' && renderOtpForm()}
+          {step === 'reset' && renderResetForm()}
+          {step === 'success' && renderSuccessForm()}
+        </div>
+      </main>
+      <Footer />
+    </div>
+  );
+}
             <form onSubmit={handleEmailSubmit} className="space-y-4">
               <div>
                 <Label htmlFor="identifier">Email or Phone Number</Label>
