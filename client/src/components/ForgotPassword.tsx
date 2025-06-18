@@ -53,6 +53,35 @@ export function ForgotPassword() {
     feedback: [],
     meets: { length: false, uppercase: false, number: false, special: false }
   });
+  const [isCaptchaVerified, setIsCaptchaVerified] = useState(false);
+  const [maskedIdentifier, setMaskedIdentifier] = useState('');
+  const [otpAttempts, setOtpAttempts] = useState(0);
+  const [resendTimer, setResendTimer] = useState(0);
+  const [isBlocked, setIsBlocked] = useState(false);
+
+  // Mask email and phone functions
+  const maskEmail = (email: string) => {
+    const [username, domain] = email.split('@');
+    const maskedUsername = username.length > 3 
+      ? username.slice(0, 2) + '*'.repeat(username.length - 4) + username.slice(-2)
+      : username[0] + '*'.repeat(username.length - 1);
+    return `${maskedUsername}@${domain}`;
+  };
+
+  const maskPhone = (phone: string) => {
+    return phone.slice(0, 2) + '*'.repeat(6) + phone.slice(-2);
+  };
+
+  // Resend timer management
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (resendTimer > 0) {
+      timer = setTimeout(() => {
+        setResendTimer(prev => prev - 1);
+      }, 1000);
+    }
+    return () => clearTimeout(timer);
+  }, [resendTimer]);
 
   // Session timeout management (hidden as requested)
   useEffect(() => {
@@ -129,12 +158,24 @@ export function ForgotPassword() {
   const validateIdentifier = async (value: string) => {
     if (!value.trim()) {
       setIsValidIdentifier(false);
+      setError('');
+      return;
+    }
+
+    // Check if it's valid email or 10-digit phone
+    const isEmail = value.includes('@');
+    const isPhone = /^\d{10}$/.test(value.trim());
+    
+    if (!isEmail && !isPhone) {
+      setIsValidIdentifier(false);
+      setError('Enter a valid email or 10-digit phone number');
       return;
     }
 
     setIsValidating(true);
+    setError('');
+    
     try {
-      const isEmail = value.includes('@');
       const response = await fetch('/api/validate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -146,12 +187,59 @@ export function ForgotPassword() {
       });
 
       const data = await response.json();
-      setIsValidIdentifier(!data.available); // User exists if NOT available
+      const userExists = !data.available; // User exists if NOT available
+      setIsValidIdentifier(userExists);
       setIdentifierType(isEmail ? 'email' : 'phone');
+      
+      if (!userExists) {
+        setError(`User not found with this ${isEmail ? 'email' : 'phone number'}`);
+      } else {
+        // Set masked identifier for display
+        const masked = isEmail ? maskEmail(value.trim()) : maskPhone(value.trim());
+        setMaskedIdentifier(masked);
+      }
     } catch (error) {
       setIsValidIdentifier(false);
+      setError('Unable to verify. Please try again.');
     } finally {
       setIsValidating(false);
+    }
+  };
+
+  // Verify captcha separately
+  const verifyCaptcha = async () => {
+    if (!captcha || !captchaAnswer.trim()) {
+      setError('Please enter the captcha');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await fetch('/api/captcha/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId: captcha.sessionId,
+          answer: captchaAnswer.trim()
+        })
+      });
+
+      const data = await response.json();
+      if (data.valid) {
+        setIsCaptchaVerified(true);
+        setSuccess('Captcha verified successfully!');
+        setError('');
+      } else {
+        setError('Invalid captcha. Please try again.');
+        generateCaptcha();
+        setCaptchaAnswer('');
+        setIsCaptchaVerified(false);
+      }
+    } catch (error) {
+      setError('Failed to verify captcha. Please try again.');
+      setIsCaptchaVerified(false);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -188,54 +276,85 @@ export function ForgotPassword() {
   // Handle form submissions
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isValidIdentifier || !captcha || !captchaAnswer.trim()) return;
+    if (!isValidIdentifier || !isCaptchaVerified) {
+      setError('Please verify both email/phone and captcha first');
+      return;
+    }
+
+    if (isBlocked) {
+      setError('Account is temporarily blocked. Please try again later.');
+      return;
+    }
 
     setLoading(true);
     setError('');
 
     try {
-      // Verify captcha first
-      const captchaResponse = await fetch('/api/captcha/verify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sessionId: captcha.sessionId,
-          answer: captchaAnswer.trim()
-        })
-      });
-
-      const captchaResult = await captchaResponse.json();
-      if (!captchaResult.valid) {
-        setError('Invalid captcha. Please try again.');
-        generateCaptcha();
-        setCaptchaAnswer('');
-        return;
-      }
-
-      // Send reset OTP
+      // Send reset OTP to both email and phone
       const response = await fetch('/api/auth/forgot-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           identifier: identifier.trim(),
-          type: identifierType
+          type: identifierType,
+          sendToBoth: true // Send to both email and phone
         })
       });
 
       const data = await response.json();
       if (response.ok) {
         setStep('otp');
-        setSessionTimeout(0); // Reset for OTP step
-        setSuccess(data.message);
+        setSessionTimeout(0);
+        setOtpAttempts(prev => prev + 1);
+        setResendTimer(180); // 3 minutes
+        setSuccess(`Reset code sent to your ${identifierType === 'email' ? 'email and phone' : 'phone and email'}`);
+        
+        // Block account if 5+ attempts
+        if (otpAttempts >= 4) {
+          setIsBlocked(true);
+          setTimeout(() => setIsBlocked(false), 5 * 60 * 60 * 1000); // 5 hours
+        }
       } else {
         setError(data.message || 'Failed to send reset code');
-        generateCaptcha();
-        setCaptchaAnswer('');
       }
     } catch (error) {
       setError('Network error. Please try again.');
-      generateCaptcha();
-      setCaptchaAnswer('');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Resend OTP
+  const resendOtp = async () => {
+    if (resendTimer > 0 || otpAttempts >= 5 || isBlocked) return;
+
+    setLoading(true);
+    try {
+      const response = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          identifier: identifier.trim(),
+          type: identifierType,
+          sendToBoth: true
+        })
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        setOtpAttempts(prev => prev + 1);
+        setResendTimer(180);
+        setSuccess('New reset code sent');
+        
+        if (otpAttempts >= 4) {
+          setIsBlocked(true);
+          setTimeout(() => setIsBlocked(false), 5 * 60 * 60 * 1000);
+        }
+      } else {
+        setError(data.message || 'Failed to resend code');
+      }
+    } catch (error) {
+      setError('Network error. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -262,10 +381,14 @@ export function ForgotPassword() {
       const data = await response.json();
       if (response.ok) {
         setStep('reset');
-        setSessionTimeout(0); // Reset for password reset step
-        setSuccess('OTP verified. Please set your new password.');
+        setSessionTimeout(0);
+        setSuccess('OTP verified successfully! Please set your new password.');
+        setError('');
+        setOtpCode('');
+        // Generate new captcha for reset step
+        generateCaptcha();
       } else {
-        setError(data.message || 'Invalid OTP');
+        setError(data.message || 'Invalid OTP. Please try again.');
         setOtpCode('');
       }
     } catch (error) {
@@ -404,10 +527,16 @@ export function ForgotPassword() {
               <Input
                 id="identifier"
                 type="text"
-                placeholder="Enter email or phone number"
+                placeholder="Enter email or 10-digit phone number"
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}
-                className="pr-10 bg-white/50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600"
+                className={`pr-10 bg-white/50 dark:bg-slate-700/50 transition-colors ${
+                  identifier && !isValidating 
+                    ? isValidIdentifier 
+                      ? 'border-green-500 dark:border-green-400' 
+                      : 'border-red-500 dark:border-red-400'
+                    : 'border-slate-300 dark:border-slate-600'
+                }`}
                 required
               />
               <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
@@ -415,18 +544,13 @@ export function ForgotPassword() {
                   <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                 ) : identifier && (
                   isValidIdentifier ? (
-                    <CheckCircle className="w-4 h-4 text-green-500" />
+                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
                   ) : (
-                    <XCircle className="w-4 h-4 text-red-500" />
+                    <div className="w-3 h-3 bg-red-500 rounded-full"></div>
                   )
                 )}
               </div>
             </div>
-            {identifier && !isValidating && !isValidIdentifier && (
-              <p className="text-sm text-red-600 mt-1">
-                No account found with this {identifier.includes('@') ? 'email' : 'phone number'}
-              </p>
-            )}
           </div>
 
           <div>
@@ -449,15 +573,38 @@ export function ForgotPassword() {
                 <RefreshCw className="w-4 h-4" />
               </Button>
             </div>
-            <Input
-              id="captcha"
-              type="text"
-              placeholder="Enter captcha"
-              value={captchaAnswer}
-              onChange={(e) => setCaptchaAnswer(e.target.value)}
-              className="bg-white/50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600"
-              required
-            />
+            <div className="flex space-x-2">
+              <Input
+                id="captcha"
+                type="text"
+                placeholder="Enter captcha"
+                value={captchaAnswer}
+                onChange={(e) => {
+                  setCaptchaAnswer(e.target.value);
+                  setIsCaptchaVerified(false);
+                  setSuccess('');
+                }}
+                className={`bg-white/50 dark:bg-slate-700/50 transition-colors ${
+                  isCaptchaVerified 
+                    ? 'border-green-500 dark:border-green-400' 
+                    : 'border-slate-300 dark:border-slate-600'
+                }`}
+                required
+              />
+              <Button
+                type="button"
+                onClick={verifyCaptcha}
+                disabled={!captchaAnswer.trim() || loading || isCaptchaVerified}
+                className="px-4"
+                variant={isCaptchaVerified ? "default" : "outline"}
+              >
+                {isCaptchaVerified ? (
+                  <CheckCircle className="w-4 h-4 text-white" />
+                ) : (
+                  'Verify'
+                )}
+              </Button>
+            </div>
           </div>
 
           <div className="flex space-x-3 pt-4">
@@ -472,12 +619,20 @@ export function ForgotPassword() {
             </Button>
             <Button
               type="submit"
-              disabled={!isValidIdentifier || !captchaAnswer.trim() || loading}
+              disabled={!isValidIdentifier || !isCaptchaVerified || loading || isBlocked}
               className="flex-1"
             >
               {loading ? 'Sending...' : 'Continue'}
             </Button>
           </div>
+          
+          {otpAttempts >= 5 && (
+            <div className="text-center">
+              <p className="text-sm text-red-600">
+                Maximum attempts reached. Account blocked for 5 hours.
+              </p>
+            </div>
+          )}
         </form>
       </CardContent>
     </Card>
@@ -490,8 +645,19 @@ export function ForgotPassword() {
           Verify OTP
         </CardTitle>
         <p className="text-slate-600 dark:text-slate-400 text-sm mt-2">
-          Enter the 6-digit code sent to your {identifierType}
+          Enter the 6-digit code sent to:
         </p>
+        <div className="text-center space-y-1 mt-3">
+          <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
+            📧 {maskedIdentifier}
+          </p>
+          <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
+            📱 {identifierType === 'email' ? maskPhone(identifier.slice(0, 10)) : maskedIdentifier}
+          </p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            OTP sent to both email and phone
+          </p>
+        </div>
       </CardHeader>
       <CardContent className="space-y-6">
         {error && (
@@ -527,6 +693,36 @@ export function ForgotPassword() {
             </InputOTP>
           </div>
 
+          {/* Timer and Resend Section */}
+          <div className="text-center py-2">
+            {resendTimer > 0 ? (
+              <div className="space-y-1">
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                  Resend available in
+                </p>
+                <p className="text-lg font-mono font-semibold text-primary">
+                  {Math.floor(resendTimer / 60)}:{(resendTimer % 60).toString().padStart(2, '0')}
+                </p>
+              </div>
+            ) : otpAttempts < 5 && !isBlocked ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={resendOtp}
+                disabled={loading}
+                className="text-primary hover:text-primary/80 border-primary/20 hover:border-primary/40"
+              >
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Resend OTP ({5 - otpAttempts} left)
+              </Button>
+            ) : (
+              <p className="text-sm text-red-600">
+                Maximum resend attempts reached
+              </p>
+            )}
+          </div>
+
           <div className="flex space-x-3">
             <Button
               type="button"
@@ -542,7 +738,7 @@ export function ForgotPassword() {
               disabled={otpCode.length !== 6 || loading}
               className="flex-1"
             >
-              {loading ? 'Verifying...' : 'Verify'}
+              {loading ? 'Verifying...' : 'Verify OTP'}
             </Button>
           </div>
         </form>
