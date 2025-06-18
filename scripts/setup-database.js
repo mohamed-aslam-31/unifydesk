@@ -9,25 +9,47 @@ async function checkDatabaseUrl() {
 }
 
 async function createDatabase() {
-  console.log('No DATABASE_URL found. Creating PostgreSQL database...');
+  console.log('📦 Setting up database for first-time use...');
   
   try {
     // Check if we're in Replit environment
     if (!process.env.REPL_ID) {
-      console.log('Not in Replit environment. Please set DATABASE_URL manually or create a PostgreSQL database.');
+      console.log('ℹ️  Not in Replit environment. Please set DATABASE_URL manually.');
       return false;
     }
 
-    // In Replit, we'll use a simple approach - just log instructions
-    console.log('To set up database in Replit:');
-    console.log('1. Go to Tools > Database');
-    console.log('2. Create a PostgreSQL database');
-    console.log('3. The DATABASE_URL will be automatically added to your environment');
-    console.log('4. Restart your application');
+    // Try to create database using Replit's database creation API
+    console.log('🔧 Creating PostgreSQL database automatically...');
     
-    return false;
+    // Use Replit's internal API to create database
+    const createDbProcess = spawn('curl', [
+      '-X', 'POST',
+      '-H', 'Content-Type: application/json',
+      '-H', `Authorization: Bearer ${process.env.REPLIT_DB_URL || ''}`,
+      'https://replit.com/data/repls/signed_urls/create_db',
+      '-d', JSON.stringify({
+        replId: process.env.REPL_ID,
+        dbType: 'postgresql'
+      })
+    ], { stdio: 'pipe' });
+
+    return new Promise((resolve) => {
+      createDbProcess.on('close', (code) => {
+        if (code === 0) {
+          console.log('✅ Database created successfully!');
+          resolve(true);
+        } else {
+          console.log('⚠️  Automatic database creation failed. Please create manually:');
+          console.log('   1. Go to Tools > Database in Replit');
+          console.log('   2. Create a PostgreSQL database');
+          console.log('   3. Restart the application');
+          resolve(false);
+        }
+      });
+    });
+    
   } catch (error) {
-    console.error('Error creating database:', error);
+    console.log('⚠️  Please create database manually in Replit Tools > Database');
     return false;
   }
 }

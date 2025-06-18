@@ -38,16 +38,24 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Auto-setup database if needed
+  const { setupDatabase } = await import("./auto-setup.js");
+  const dbSetup = await setupDatabase();
+  
+  if (!dbSetup.success) {
+    console.log(dbSetup.message);
+  }
+
   // Try to connect to PostgreSQL, then Replit Database, fallback to in-memory storage
   if (process.env.DATABASE_URL) {
     try {
-      console.log("Attempting to connect to PostgreSQL database...");
+      console.log("Initializing PostgreSQL storage...");
       // Import and test PostgreSQL storage
       const { storage } = await import("./storage-pg.js");
       await storage.getUser(1); // Test connection
-      console.log("Connected to PostgreSQL database successfully");
+      console.log("PostgreSQL storage initialized successfully");
     } catch (error) {
-      console.log("PostgreSQL connection failed, trying Replit Database...");
+      console.log("PostgreSQL storage failed, trying Replit Database...");
       console.log("Database connection error:", error instanceof Error ? error.message : String(error));
       
       try {
