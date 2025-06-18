@@ -634,7 +634,7 @@ export function ForgotPassword() {
               <Input
                 id="identifier"
                 type="text"
-                placeholder="Enter email or 10-digit phone number"
+                placeholder="Enter email or Phone"
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}
                 className={`pr-10 bg-white/50 dark:bg-slate-700/50 transition-colors ${
