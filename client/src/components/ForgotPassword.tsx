@@ -794,28 +794,57 @@ export function ForgotPassword() {
     <Card className="w-full bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border-slate-200 dark:border-slate-700 shadow-xl">
       <CardHeader className="text-center pb-6">
         <CardTitle className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-          Verify OTP
+          OTP Verification
         </CardTitle>
         <p className="text-slate-600 dark:text-slate-400 text-sm mt-2">
-          Enter the 6-digit code sent to:
+          OTP sent to both email and phone number
         </p>
-        <div className="text-center space-y-1 mt-3">
-          <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
-            📧 {maskedIdentifier}
-          </p>
-          <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
-            📱 {identifierType === 'email' ? maskPhone(identifier.slice(0, 10)) : maskedIdentifier}
-          </p>
+        <div className="text-center space-y-2 mt-4">
+          {maskedEmail && (
+            <div className="flex items-center justify-center space-x-2">
+              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+              <span className="text-sm text-slate-700 dark:text-slate-300 font-mono">
+                {maskedEmail}
+              </span>
+            </div>
+          )}
+          {maskedPhone && (
+            <div className="flex items-center justify-center space-x-2">
+              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              <span className="text-sm text-slate-700 dark:text-slate-300 font-mono">
+                {maskedPhone}
+              </span>
+            </div>
+          )}
+          {!maskedEmail && !maskedPhone && maskedIdentifier && (
+            <div className="text-sm text-slate-700 dark:text-slate-300 font-mono">
+              {maskedIdentifier}
+            </div>
+          )}
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            OTP sent to both email and phone
+            Session expires in {formatTime(otpTimeLeft)}
           </p>
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
-        {success && (
-          <Alert>
-            <AlertDescription className="text-green-600">{success}</AlertDescription>
-          </Alert>
+        {/* Small messages with auto-hide and fade effect */}
+        {showMessage && (success || error) && (
+          <div className={`transition-opacity duration-500 ${showMessage ? 'opacity-100' : 'opacity-0'}`}>
+            {success && (
+              <div className="text-center">
+                <p className="text-xs text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 px-3 py-2 rounded border border-green-200 dark:border-green-800">
+                  {success}
+                </p>
+              </div>
+            )}
+            {error && (
+              <div className="text-center">
+                <p className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-3 py-2 rounded border border-red-200 dark:border-red-800">
+                  {error}
+                </p>
+              </div>
+            )}
+          </div>
         )}
 
         <form onSubmit={handleOtpSubmit} className="space-y-6">

@@ -719,8 +719,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         verified: false
       });
 
-      // Send OTP
-      console.log(`Password reset OTP sent to ${type} (${type === 'email' ? maskEmail(identifier) : maskPhone(identifier)}): ${otp}`);
+      // Send OTP to both email and phone
+      console.log(`Password reset OTP sent to phone (${maskPhone(user.phone)}): ${otp}`);
       
       // Set session cookie for reset OTP verification
       res.cookie('resetSessionId', resetSessionId, {
@@ -730,7 +730,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       res.json({
-        message: `Reset code sent to your ${type}`,
+        message: "Reset code sent to your " + type,
+        maskedEmail: maskEmail(user.email),
+        maskedPhone: maskPhone(user.phone),
         maskedIdentifier: type === 'email' ? maskEmail(identifier) : maskPhone(identifier)
       });
     } catch (error) {
