@@ -219,12 +219,15 @@ export function VisualCaptcha({ onVerified, onError, hasError, className = "" }:
           <Input
             type="text"
             value={answer}
-            onChange={(e) => setAnswer(e.target.value.toUpperCase())}
+            onChange={(e) => {
+              setAnswer(e.target.value.toUpperCase());
+              setError(''); // Clear error when typing
+            }}
             onKeyPress={handleKeyPress}
             placeholder="Enter CAPTCHA text"
             disabled={isLoading || isVerifying || isVerified}
             className={`flex-1 font-mono tracking-wider ${
-              hasError ? "border-red-500 focus:ring-red-500" : ""
+              error ? "border-red-500 focus:ring-red-500" : ""
             } ${isVerified ? "border-green-500" : ""}`}
             autoComplete="off"
             maxLength={6}
@@ -236,35 +239,42 @@ export function VisualCaptcha({ onVerified, onError, hasError, className = "" }:
             disabled={isLoading || isVerifying || !answer.trim() || isVerified}
             size="sm"
             className="px-4"
+            variant={isVerified ? "default" : "outline"}
           >
             {isVerifying ? (
               <RefreshCw className="h-4 w-4 animate-spin" />
             ) : isVerified ? (
-              <CheckCircle className="h-4 w-4 text-green-600" />
+              <CheckCircle className="h-4 w-4 text-white" />
             ) : (
               "Verify"
             )}
           </Button>
         </div>
 
-        {/* Status Messages */}
+        {/* Error message under input - small font with background */}
         {error && (
-          <div className="flex items-center gap-2 text-sm text-red-600">
-            <XCircle className="h-4 w-4" />
-            {error}
+          <div className="mt-1">
+            <p className="text-xs text-red-600 dark:text-red-400 font-medium bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded border border-red-200 dark:border-red-800">
+              Wrong captcha! Please try again
+            </p>
           </div>
         )}
         
+        {/* Success message under input */}
         {isVerified && (
-          <div className="flex items-center gap-2 text-sm text-green-600">
-            <CheckCircle className="h-4 w-4" />
-            CAPTCHA verified successfully
+          <div className="mt-1">
+            <p className="text-xs text-green-600 dark:text-green-400 font-medium bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded border border-green-200 dark:border-green-800 flex items-center gap-1">
+              <CheckCircle className="w-3 h-3" />
+              Verified
+            </p>
           </div>
         )}
         
         {isLoading && (
-          <div className="text-sm text-gray-500">
-            Generating new CAPTCHA...
+          <div className="mt-1">
+            <p className="text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/20 px-2 py-1 rounded border border-gray-200 dark:border-gray-800">
+              Generating new CAPTCHA...
+            </p>
           </div>
         )}
       </div>

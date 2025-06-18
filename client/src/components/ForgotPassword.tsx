@@ -544,25 +544,41 @@ export function ForgotPassword() {
                   <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                 ) : identifier && (
                   isValidIdentifier ? (
-                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                    <CheckCircle className="w-4 h-4 text-green-500" />
                   ) : (
-                    <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                    <XCircle className="w-4 h-4 text-red-500" />
                   )
                 )}
               </div>
             </div>
+            {/* Error message under input - small font */}
+            {identifier && !isValidating && !isValidIdentifier && error && error.includes('User not found') && (
+              <div className="mt-1">
+                <p className="text-xs text-red-600 dark:text-red-400 font-medium bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded border border-red-200 dark:border-red-800">
+                  {error}
+                </p>
+              </div>
+            )}
           </div>
 
           <div>
             <Label htmlFor="captcha" className="text-slate-700 dark:text-slate-300">Captcha</Label>
             <div className="flex items-center space-x-2 mb-2">
-              {captchaCanvas && (
-                <img 
-                  src={captchaCanvas} 
-                  alt="Captcha" 
-                  className="border rounded bg-white"
-                />
-              )}
+              <div className="relative">
+                {captchaCanvas && (
+                  <img 
+                    src={captchaCanvas} 
+                    alt="Captcha" 
+                    className="border rounded bg-white"
+                  />
+                )}
+                {/* Green checkmark overlay when verified */}
+                {isCaptchaVerified && (
+                  <div className="absolute top-1 right-1 bg-green-500 rounded-full p-1">
+                    <CheckCircle className="w-3 h-3 text-white" />
+                  </div>
+                )}
+              </div>
               <Button
                 type="button"
                 variant="outline"
@@ -583,11 +599,17 @@ export function ForgotPassword() {
                   setCaptchaAnswer(e.target.value);
                   setIsCaptchaVerified(false);
                   setSuccess('');
+                  // Clear captcha-specific errors
+                  if (error && (error.includes('captcha') || error.includes('Invalid captcha'))) {
+                    setError('');
+                  }
                 }}
                 className={`bg-white/50 dark:bg-slate-700/50 transition-colors ${
                   isCaptchaVerified 
                     ? 'border-green-500 dark:border-green-400' 
-                    : 'border-slate-300 dark:border-slate-600'
+                    : error && (error.includes('captcha') || error.includes('Invalid captcha'))
+                      ? 'border-red-500 dark:border-red-400'
+                      : 'border-slate-300 dark:border-slate-600'
                 }`}
                 required
               />
@@ -598,13 +620,32 @@ export function ForgotPassword() {
                 className="px-4"
                 variant={isCaptchaVerified ? "default" : "outline"}
               >
-                {isCaptchaVerified ? (
+                {loading ? (
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                ) : isCaptchaVerified ? (
                   <CheckCircle className="w-4 h-4 text-white" />
                 ) : (
                   'Verify'
                 )}
               </Button>
             </div>
+            {/* Captcha error message under input - small font */}
+            {error && (error.includes('captcha') || error.includes('Invalid captcha')) && (
+              <div className="mt-1">
+                <p className="text-xs text-red-600 dark:text-red-400 font-medium bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded border border-red-200 dark:border-red-800">
+                  Wrong captcha! Please try again
+                </p>
+              </div>
+            )}
+            {/* Captcha success message */}
+            {isCaptchaVerified && (
+              <div className="mt-1">
+                <p className="text-xs text-green-600 dark:text-green-400 font-medium bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded border border-green-200 dark:border-green-800 flex items-center gap-1">
+                  <CheckCircle className="w-3 h-3" />
+                  Verified
+                </p>
+              </div>
+            )}
           </div>
 
           <div className="flex space-x-3 pt-4">
