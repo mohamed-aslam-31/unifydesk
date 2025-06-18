@@ -730,9 +730,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       res.json({
-        message: "Reset code sent to your " + type,
-        maskedEmail: maskEmail(user.email),
-        maskedPhone: maskPhone(user.phone),
+        message: "Reset code sent to both email and phone",
+        maskedEmail: user.email ? maskEmail(user.email) : null,
+        maskedPhone: user.phone ? maskPhone(user.phone) : null,
         maskedIdentifier: type === 'email' ? maskEmail(identifier) : maskPhone(identifier)
       });
     } catch (error) {

@@ -137,7 +137,7 @@ export function ForgotPassword() {
         setOtpTimeLeft(prev => {
           if (prev <= 1) {
             setError('OTP session expired. Please try again.');
-            setStep('email');
+            setLocation('/login');
             return 0;
           }
           return prev - 1;
@@ -403,20 +403,17 @@ export function ForgotPassword() {
         setShowMessage(true);
         setMessageType('success');
         
-        // Store masked identifiers from response or generate from user data
+        // Store masked identifiers from response - server now sends both email and phone
         if (data.maskedEmail) {
           setMaskedEmail(data.maskedEmail);
         }
         if (data.maskedPhone) {
           setMaskedPhone(data.maskedPhone);
         }
-        // If not provided by server, mask the identifier
-        if (!data.maskedEmail && !data.maskedPhone) {
-          if (identifierType === 'email') {
-            setMaskedEmail(maskEmail(identifier));
-          } else {
-            setMaskedPhone(maskPhone(identifier));
-          }
+        
+        // Set the primary masked identifier for fallback display
+        if (data.maskedIdentifier) {
+          setMaskedIdentifier(data.maskedIdentifier);
         }
         
         // Block account if 5+ attempts
@@ -821,9 +818,7 @@ export function ForgotPassword() {
               {maskedIdentifier}
             </div>
           )}
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            Session expires in {formatTime(otpTimeLeft)}
-          </p>
+
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
