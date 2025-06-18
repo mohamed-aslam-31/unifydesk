@@ -60,6 +60,8 @@ export function ForgotPassword() {
   const [resendTimer, setResendTimer] = useState(0);
   const [isBlocked, setIsBlocked] = useState(false);
   const [captchaMessageTimer, setCaptchaMessageTimer] = useState(0);
+  const [validationErrorTimer, setValidationErrorTimer] = useState(0);
+  const [showValidationError, setShowValidationError] = useState(true);
 
   // Mask email and phone functions
   const maskEmail = (email: string) => {
@@ -103,6 +105,23 @@ export function ForgotPassword() {
     }
     return () => clearTimeout(timer);
   }, [captchaMessageTimer]);
+
+  // Auto-hide validation error messages after 5 seconds
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (validationErrorTimer > 0) {
+      timer = setTimeout(() => {
+        setValidationErrorTimer(prev => {
+          if (prev <= 1) {
+            setShowValidationError(false);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => clearTimeout(timer);
+  }, [validationErrorTimer]);
 
   // Session timeout management (hidden as requested)
   useEffect(() => {
@@ -221,6 +240,8 @@ export function ForgotPassword() {
       
       if (!userExists) {
         setError(`User not found with this ${isEmail ? 'email' : 'phone number'}`);
+        setShowValidationError(true);
+        setValidationErrorTimer(5); // Start 5-second timer for validation error
       } else {
         // Set masked identifier for display
         const masked = isEmail ? maskEmail(value.trim()) : maskPhone(value.trim());
@@ -229,6 +250,8 @@ export function ForgotPassword() {
     } catch (error) {
       setIsValidIdentifier(false);
       setError('Unable to verify. Please try again.');
+      setShowValidationError(true);
+      setValidationErrorTimer(5); // Start 5-second timer for network error
     } finally {
       setIsValidating(false);
     }
@@ -577,7 +600,7 @@ export function ForgotPassword() {
               </div>
             </div>
             {/* Error message under input - small font */}
-            {identifier && !isValidating && !isValidIdentifier && error && error.includes('User not found') && (
+            {identifier && !isValidating && !isValidIdentifier && error && error.includes('User not found') && showValidationError && (
               <div className="mt-1">
                 <p className="text-xs text-red-600 dark:text-red-400 font-medium bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded border border-red-200 dark:border-red-800">
                   {error}
@@ -623,6 +646,7 @@ export function ForgotPassword() {
                 onChange={(e) => {
                   setCaptchaAnswer(e.target.value);
                   setIsCaptchaVerified(false);
+                  setShowVerifiedText(false);
                   setSuccess('');
                   // Clear captcha-specific errors
                   if (error && (error.includes('captcha') || error.includes('Invalid captcha'))) {
@@ -663,7 +687,7 @@ export function ForgotPassword() {
               </div>
             )}
             {/* Captcha success message */}
-            {isCaptchaVerified && (
+            {showVerifiedText && (
               <div className="mt-1">
                 <p className="text-xs text-green-600 dark:text-green-400 font-medium bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded border border-green-200 dark:border-green-800 flex items-center gap-1">
                   <CheckCircle className="w-3 h-3" />
