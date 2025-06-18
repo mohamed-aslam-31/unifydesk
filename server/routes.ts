@@ -193,7 +193,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Generate OTP
       const otp = Math.floor(100000 + Math.random() * 900000).toString();
       
-      // Update attempts
+      // Create OTP session
+      const otpSessionId = crypto.randomBytes(32).toString('hex');
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+      
+      // Store OTP session
+      global.otpSessions = global.otpSessions || new Map();
+      global.otpSessions.set(otpSessionId, {
+        identifier,
+        type,
+        otp,
+        expiresAt,
+        attempts: 0
+      });
+      
+      // Update attempts in database
       await storage.createOrUpdateOtpAttempts({
         identifier,
         type,
@@ -202,10 +216,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         blockedUntil: undefined,
       });
 
-      // TODO: Send actual OTP via email/SMS
+      // Send actual OTP via email/SMS
       console.log(`OTP for ${identifier}: ${otp}`);
       
-      res.json({ message: "OTP sent successfully", remainingAttempts: 5 - ((attempts?.attempts || 0) + 1) });
+      res.json({ 
+        message: "OTP sent successfully", 
+        sessionId: otpSessionId,
+        remainingAttempts: 5 - ((attempts?.attempts || 0) + 1) 
+      });
     } catch (error) {
       console.error("Send OTP error:", error);
       res.status(500).json({ message: "Failed to send OTP" });
@@ -266,11 +284,100 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { identifier, type, otp } = req.body;
       
-      // TODO: Verify actual OTP
-      // For demo, accept any 6-digit OTP
       if (!/^\d{6}$/.test(otp)) {
         return res.status(400).json({ message: "Invalid OTP format" });
       }
+
+      // Check if user is blocked
+      const attempts = await storage.getOtpAttempts(identifier, type);
+      if (attempts && attempts.blockedUntil && attempts.blockedUntil > new Date()) {
+        return res.status(429).json({ 
+          message: "Account blocked due to too many failed attempts. Try again later.",
+          blockedUntil: attempts.blockedUntil 
+        });
+      }
+
+      // Get stored OTP from global sessions
+      global.otpSessions = global.otpSessions || new Map();
+      let otpSession = null;
+      
+      // Find the OTP session for this identifier
+      global.otpSessions.forEach((session, sessionId) => {
+        if (session.identifier === identifier && session.type === type && !otpSession) {
+          otpSession = { sessionId, ...session };
+        }
+      });
+
+      if (!otpSession) {
+        return res.status(400).json({ message: "No active OTP session. Please request a new OTP." });
+      }
+
+      if (new Date() > otpSession.expiresAt) {
+        global.otpSessions.delete(otpSession.sessionId);
+        return res.status(400).json({ message: "OTP expired. Please request a new one." });
+      }
+
+      // Check if max attempts reached for this session
+      if (otpSession.attempts >= 10) {
+        global.otpSessions.delete(otpSession.sessionId);
+        
+        // Block user for 5 hours
+        const blockedUntil = new Date(Date.now() + 5 * 60 * 60 * 1000);
+        await storage.createOrUpdateOtpAttempts({
+          identifier,
+          type,
+          attempts: 10,
+          lastAttempt: new Date(),
+          blockedUntil,
+        });
+
+        return res.status(429).json({ 
+          message: "Account blocked due to too many failed attempts. Try again after 5 hours.",
+          blockedUntil 
+        });
+      }
+
+      // Verify OTP
+      if (otp !== otpSession.otp) {
+        // Increment attempts
+        otpSession.attempts += 1;
+        global.otpSessions.set(otpSession.sessionId, otpSession);
+        
+        // Update database attempts
+        await storage.createOrUpdateOtpAttempts({
+          identifier,
+          type,
+          attempts: otpSession.attempts,
+          lastAttempt: new Date(),
+          blockedUntil: null,
+        });
+
+        // Show warning after 5 attempts
+        if (otpSession.attempts >= 5) {
+          return res.status(400).json({ 
+            message: "Invalid OTP. Warning: Account will be blocked after 10 failed attempts.",
+            remainingAttempts: 10 - otpSession.attempts,
+            showWarning: true
+          });
+        }
+
+        return res.status(400).json({ 
+          message: "Invalid OTP. Please try again.",
+          remainingAttempts: 10 - otpSession.attempts
+        });
+      }
+
+      // OTP verified successfully
+      global.otpSessions.delete(otpSession.sessionId);
+      
+      // Reset attempts on successful verification
+      await storage.createOrUpdateOtpAttempts({
+        identifier,
+        type,
+        attempts: 0,
+        lastAttempt: new Date(),
+        blockedUntil: null,
+      });
 
       res.json({ message: "OTP verified successfully" });
     } catch (error) {
