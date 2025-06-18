@@ -43,6 +43,8 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
   const [phoneAttempts, setPhoneAttempts] = useState(0);
   const [emailCountdown, setEmailCountdown] = useState(0);
   const [phoneCountdown, setPhoneCountdown] = useState(0);
+  const [emailOtpSessionId, setEmailOtpSessionId] = useState("");
+  const [phoneOtpSessionId, setPhoneOtpSessionId] = useState("");
   const [termsModalOpen, setTermsModalOpen] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [captchaVerified, setCaptchaVerified] = useState(false);
@@ -347,7 +349,8 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
     }
     
     try {
-      await sendOTP(email, "email");
+      const result = await sendOTP(email, "email");
+      setEmailOtpSessionId(result.sessionId);
       setShowEmailOTP(true);
       setEmailOtpSendCount(prev => prev + 1);
       setEmailLastSent(new Date());
@@ -382,7 +385,8 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
     }
     
     try {
-      await sendOTP(`${countryCode}${phone}`, "phone");
+      const result = await sendOTP(`${countryCode}${phone}`, "phone");
+      setPhoneOtpSessionId(result.sessionId);
       setShowPhoneOTP(true);
       setPhoneOtpSendCount(prev => prev + 1);
       setPhoneLastSent(new Date());
@@ -397,7 +401,7 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
   const handleEmailOTPComplete = async (otp: string) => {
     const email = form.getValues("email");
     try {
-      await verifyOTP(email, "email", otp);
+      await verifyOTP(email, "email", otp, emailOtpSessionId);
       setEmailVerified(true);
       setShowEmailOTP(false);
       setLastVerifiedEmail(email);
@@ -439,7 +443,7 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
     const phone = form.getValues("phone");
     const countryCode = form.getValues("countryCode");
     try {
-      await verifyOTP(`${countryCode}${phone}`, "phone", otp);
+      await verifyOTP(`${countryCode}${phone}`, "phone", otp, phoneOtpSessionId);
       setPhoneVerified(true);
       setShowPhoneOTP(false);
       setLastVerifiedPhone(phone);

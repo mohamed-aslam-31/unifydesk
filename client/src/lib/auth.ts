@@ -56,13 +56,13 @@ export const sendOTP = async (identifier: string, type: "email" | "phone"): Prom
   return response.json();
 };
 
-export const verifyOTP = async (identifier: string, type: "email" | "phone", otp: string): Promise<{ message: string; remainingAttempts?: number; showWarning?: boolean }> => {
+export const verifyOTP = async (identifier: string, type: "email" | "phone", otp: string, sessionId?: string): Promise<{ message: string; remainingAttempts?: number; showWarning?: boolean }> => {
   const response = await fetch("/api/verify-otp", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ identifier, type, otp }),
+    body: JSON.stringify({ identifier, type, otp, sessionId }),
   });
   
   const result = await response.json();

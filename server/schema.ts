@@ -37,7 +37,7 @@ export const sessions = pgTable('sessions', {
 export const otpAttempts = pgTable('otp_attempts', {
   id: serial('id').primaryKey(),
   identifier: varchar('identifier', { length: 255 }).notNull(),
-  type: varchar('type', { length: 50 }).notNull(),
+  type: varchar('type', { length: 20 }).notNull(),
   attempts: integer('attempts').default(0).notNull(),
   lastAttempt: timestamp('last_attempt'),
   blockedUntil: timestamp('blocked_until'),
