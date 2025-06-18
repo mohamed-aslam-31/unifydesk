@@ -54,6 +54,7 @@ export function ForgotPassword() {
     meets: { length: false, uppercase: false, number: false, special: false }
   });
   const [isCaptchaVerified, setIsCaptchaVerified] = useState(false);
+  const [showVerifiedText, setShowVerifiedText] = useState(false);
   const [maskedIdentifier, setMaskedIdentifier] = useState('');
   const [otpAttempts, setOtpAttempts] = useState(0);
   const [resendTimer, setResendTimer] = useState(0);
@@ -84,15 +85,16 @@ export function ForgotPassword() {
     return () => clearTimeout(timer);
   }, [resendTimer]);
 
-  // Auto-hide captcha messages after 5 seconds
+  // Auto-hide captcha text messages after 5 seconds (but keep visual checkmark)
   useEffect(() => {
     let timer: NodeJS.Timeout;
     if (captchaMessageTimer > 0) {
       timer = setTimeout(() => {
         setCaptchaMessageTimer(prev => {
           if (prev <= 1) {
-            setIsCaptchaVerified(false);
+            // Clear error messages and verified text, keep isCaptchaVerified for visual checkmark
             setError('');
+            setShowVerifiedText(false);
             return 0;
           }
           return prev - 1;
@@ -130,6 +132,13 @@ export function ForgotPassword() {
   // Generate captcha
   const generateCaptcha = async () => {
     try {
+      // Reset verification state when generating new captcha
+      setIsCaptchaVerified(false);
+      setShowVerifiedText(false);
+      setCaptchaAnswer('');
+      setError('');
+      setCaptchaMessageTimer(0);
+      
       const response = await fetch('/api/captcha/generate');
       const data = await response.json();
       setCaptcha(data);
@@ -246,6 +255,7 @@ export function ForgotPassword() {
       const data = await response.json();
       if (data.valid) {
         setIsCaptchaVerified(true);
+        setShowVerifiedText(true);
         setError('');
         setCaptchaMessageTimer(5); // Start 5-second timer for verified message
       } else {
