@@ -363,7 +363,7 @@ export default function LoginPage() {
                     <div className="relative">
                       <Input
                         type="text"
-                        placeholder="Enter your email or phone number"
+                        placeholder="Enter your email or phone"
                         {...field}
                         onChange={(e) => {
                           field.onChange(e);
@@ -382,6 +382,11 @@ export default function LoginPage() {
                       </div>
                     </div>
                   </FormControl>
+                  {!isValidating && validationStatus === "invalid" && field.value && (
+                    <div className="text-red-500 text-xs mt-1 bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded">
+                      {/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(field.value) ? "No user matches this email ID" : "No user matches this phone number"}
+                    </div>
+                  )}
                   <FormMessage />
                 </FormItem>
               )}
@@ -550,32 +555,32 @@ export default function LoginPage() {
                       <InputOTP 
                         maxLength={6} 
                         {...field}
-                        className="gap-1 sm:gap-2"
+                        className="gap-2"
                       >
-                        <InputOTPGroup className="gap-1 sm:gap-2">
+                        <InputOTPGroup className="gap-2">
                           <InputOTPSlot 
                             index={0} 
-                            className="w-8 h-8 sm:w-12 sm:h-12 text-sm sm:text-lg font-bold border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200" 
+                            className="w-12 h-12 text-lg font-bold border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200" 
                           />
                           <InputOTPSlot 
                             index={1} 
-                            className="w-8 h-8 sm:w-12 sm:h-12 text-sm sm:text-lg font-bold border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200" 
+                            className="w-12 h-12 text-lg font-bold border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200" 
                           />
                           <InputOTPSlot 
                             index={2} 
-                            className="w-8 h-8 sm:w-12 sm:h-12 text-sm sm:text-lg font-bold border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200" 
+                            className="w-12 h-12 text-lg font-bold border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200" 
                           />
                           <InputOTPSlot 
                             index={3} 
-                            className="w-8 h-8 sm:w-12 sm:h-12 text-sm sm:text-lg font-bold border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200" 
+                            className="w-12 h-12 text-lg font-bold border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200" 
                           />
                           <InputOTPSlot 
                             index={4} 
-                            className="w-8 h-8 sm:w-12 sm:h-12 text-sm sm:text-lg font-bold border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200" 
+                            className="w-12 h-12 text-lg font-bold border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200" 
                           />
                           <InputOTPSlot 
                             index={5} 
-                            className="w-8 h-8 sm:w-12 sm:h-12 text-sm sm:text-lg font-bold border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200" 
+                            className="w-12 h-12 text-lg font-bold border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200" 
                           />
                         </InputOTPGroup>
                       </InputOTP>
