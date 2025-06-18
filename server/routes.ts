@@ -708,7 +708,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const resetSessionId = crypto.randomBytes(32).toString('hex');
       const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
       
-      global.resetOtpSessions = global.resetOtpSessions || new Map();
+      (global as any).resetOtpSessions = (global as any).resetOtpSessions || new Map();
       (global as any).resetOtpSessions.set(resetSessionId, {
         userId: user.id,
         identifier,
@@ -749,21 +749,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "OTP and session required" });
       }
 
-      global.resetOtpSessions = global.resetOtpSessions || new Map();
-      const resetSession = global.resetOtpSessions.get(resetSessionId);
+      (global as any).resetOtpSessions = (global as any).resetOtpSessions || new Map();
+      const resetSession = (global as any).resetOtpSessions.get(resetSessionId);
 
       if (!resetSession) {
         return res.status(400).json({ message: "Invalid reset session" });
       }
 
       if (new Date() > resetSession.expiresAt) {
-        global.resetOtpSessions.delete(resetSessionId);
+        (global as any).resetOtpSessions.delete(resetSessionId);
         res.clearCookie('resetSessionId');
         return res.status(400).json({ message: "Reset code expired" });
       }
 
       if (resetSession.attempts >= 3) {
-        global.resetOtpSessions.delete(resetSessionId);
+        (global as any).resetOtpSessions.delete(resetSessionId);
         res.clearCookie('resetSessionId');
         return res.status(400).json({ message: "Too many incorrect attempts" });
       }
@@ -793,15 +793,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Password and session required" });
       }
 
-      global.resetOtpSessions = global.resetOtpSessions || new Map();
-      const resetSession = global.resetOtpSessions.get(resetSessionId);
+      (global as any).resetOtpSessions = (global as any).resetOtpSessions || new Map();
+      const resetSession = (global as any).resetOtpSessions.get(resetSessionId);
 
       if (!resetSession || !resetSession.verified) {
         return res.status(400).json({ message: "Invalid or unverified reset session" });
       }
 
       if (new Date() > resetSession.expiresAt) {
-        global.resetOtpSessions.delete(resetSessionId);
+        (global as any).resetOtpSessions.delete(resetSessionId);
         res.clearCookie('resetSessionId');
         return res.status(400).json({ message: "Reset session expired" });
       }
@@ -816,7 +816,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       // Clean up session
-      global.resetOtpSessions.delete(resetSessionId);
+      (global as any).resetOtpSessions.delete(resetSessionId);
       res.clearCookie('resetSessionId');
 
       // Send confirmation email
