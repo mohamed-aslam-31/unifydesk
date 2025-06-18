@@ -152,6 +152,8 @@ UnifyDesk is a comprehensive business management platform that serves as an e-co
 - June 18, 2025: Successfully migrated from Replit Agent to standard Replit environment with PostgreSQL database setup
 - June 18, 2025: Added PostgreSQL database with Drizzle ORM schema push, upgraded from Replit Database to full PostgreSQL
 - June 18, 2025: Enhanced forgot password page with Three.js floating background, header/footer, hidden session timer, and live database validation for email/phone verification
+- June 18, 2025: Configured PostgreSQL database with Drizzle ORM schema push, application now running with proper database connection
+- June 18, 2025: Added 6 sample users to database for testing purposes with varied roles (customer, admin, shopkeeper, employee) and approval statuses
 
 ## User Preferences
 

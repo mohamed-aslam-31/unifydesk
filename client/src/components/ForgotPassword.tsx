@@ -58,6 +58,7 @@ export function ForgotPassword() {
   const [otpAttempts, setOtpAttempts] = useState(0);
   const [resendTimer, setResendTimer] = useState(0);
   const [isBlocked, setIsBlocked] = useState(false);
+  const [captchaMessageTimer, setCaptchaMessageTimer] = useState(0);
 
   // Mask email and phone functions
   const maskEmail = (email: string) => {
@@ -82,6 +83,24 @@ export function ForgotPassword() {
     }
     return () => clearTimeout(timer);
   }, [resendTimer]);
+
+  // Auto-hide captcha messages after 5 seconds
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (captchaMessageTimer > 0) {
+      timer = setTimeout(() => {
+        setCaptchaMessageTimer(prev => {
+          if (prev <= 1) {
+            setIsCaptchaVerified(false);
+            setError('');
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => clearTimeout(timer);
+  }, [captchaMessageTimer]);
 
   // Session timeout management (hidden as requested)
   useEffect(() => {
@@ -227,16 +246,18 @@ export function ForgotPassword() {
       const data = await response.json();
       if (data.valid) {
         setIsCaptchaVerified(true);
-        setSuccess('Captcha verified successfully!');
         setError('');
+        setCaptchaMessageTimer(5); // Start 5-second timer for verified message
       } else {
         setError('Invalid captcha. Please try again.');
+        setCaptchaMessageTimer(5); // Start 5-second timer for error message
         generateCaptcha();
         setCaptchaAnswer('');
         setIsCaptchaVerified(false);
       }
     } catch (error) {
       setError('Failed to verify captcha. Please try again.');
+      setCaptchaMessageTimer(5); // Start 5-second timer for error message
       setIsCaptchaVerified(false);
     } finally {
       setLoading(false);
