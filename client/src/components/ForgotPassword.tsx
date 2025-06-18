@@ -1,0 +1,696 @@
+import { useState, useEffect } from 'react';
+import { useLocation } from 'wouter';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Alert, AlertDescription } from './ui/alert';
+import { Eye, EyeOff, ArrowLeft, CheckCircle, XCircle } from 'lucide-react';
+import { InputOTP, InputOTPGroup, InputOTPSlot } from './ui/input-otp';
+
+interface CaptchaData {
+  question: string;
+  sessionId: string;
+}
+
+interface PasswordStrength {
+  score: number;
+  feedback: string[];
+  meets: {
+    length: boolean;
+    uppercase: boolean;
+    number: boolean;
+    special: boolean;
+  };
+}
+
+export function ForgotPassword() {
+  const [, setLocation] = useLocation();
+  const [step, setStep] = useState<'email' | 'otp' | 'reset' | 'success'>('email');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [identifier, setIdentifier] = useState('');
+  const [identifierType, setIdentifierType] = useState<'email' | 'phone'>('email');
+  const [captcha, setCaptcha] = useState<CaptchaData | null>(null);
+  const [captchaAnswer, setCaptchaAnswer] = useState('');
+  const [captchaCanvas, setCaptchaCanvas] = useState<string>('');
+  const [otpCode, setOtpCode] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isValidIdentifier, setIsValidIdentifier] = useState(false);
+  const [isValidating, setIsValidating] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [sessionTimeout, setSessionTimeout] = useState(0);
+  const [passwordStrength, setPasswordStrength] = useState<PasswordStrength>({
+    score: 0,
+    feedback: [],
+    meets: { length: false, uppercase: false, number: false, special: false }
+  });
+
+  // Session timeout management
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    
+    if (step === 'email' && sessionTimeout === 0) {
+      setSessionTimeout(600); // 10 minutes for email step
+    } else if (step === 'reset' && sessionTimeout === 0) {
+      setSessionTimeout(300); // 5 minutes for reset step
+    }
+    
+    if (sessionTimeout > 0) {
+      timer = setTimeout(() => {
+        setSessionTimeout(prev => {
+          if (prev <= 1) {
+            setLocation('/login');
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    
+    return () => clearTimeout(timer);
+  }, [sessionTimeout, step, setLocation]);
+
+  // Generate captcha
+  const generateCaptcha = async () => {
+    try {
+      const response = await fetch('/api/captcha/generate');
+      const data = await response.json();
+      setCaptcha(data);
+      
+      // Create canvas to draw captcha
+      const canvas = document.createElement('canvas');
+      canvas.width = 150;
+      canvas.height = 50;
+      const ctx = canvas.getContext('2d');
+      
+      if (ctx) {
+        // Background
+        ctx.fillStyle = '#f8f9fa';
+        ctx.fillRect(0, 0, 150, 50);
+        
+        // Add noise lines
+        for (let i = 0; i < 5; i++) {
+          ctx.strokeStyle = `hsl(${Math.random() * 360}, 50%, 70%)`;
+          ctx.beginPath();
+          ctx.moveTo(Math.random() * 150, Math.random() * 50);
+          ctx.lineTo(Math.random() * 150, Math.random() * 50);
+          ctx.stroke();
+        }
+        
+        // Draw text
+        ctx.font = 'bold 20px Arial';
+        ctx.fillStyle = '#333';
+        ctx.textAlign = 'center';
+        ctx.fillText(data.question, 75, 30);
+        
+        // Add noise dots
+        for (let i = 0; i < 50; i++) {
+          ctx.fillStyle = `hsl(${Math.random() * 360}, 50%, 80%)`;
+          ctx.fillRect(Math.random() * 150, Math.random() * 50, 2, 2);
+        }
+        
+        setCaptchaCanvas(canvas.toDataURL());
+      }
+    } catch (error) {
+      console.error('Failed to generate captcha:', error);
+    }
+  };
+
+  // Validate identifier (email or phone)
+  const validateIdentifier = async (value: string) => {
+    if (!value.trim()) {
+      setIsValidIdentifier(false);
+      return;
+    }
+
+    setIsValidating(true);
+    try {
+      const isEmail = value.includes('@');
+      const response = await fetch('/api/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: isEmail ? 'email' : 'phone',
+          value: value.trim(),
+          countryCode: isEmail ? undefined : '+91'
+        })
+      });
+
+      const data = await response.json();
+      setIsValidIdentifier(!data.available); // User exists if NOT available
+      setIdentifierType(isEmail ? 'email' : 'phone');
+    } catch (error) {
+      setIsValidIdentifier(false);
+    } finally {
+      setIsValidating(false);
+    }
+  };
+
+  // Password strength checker
+  const checkPasswordStrength = (pwd: string) => {
+    const meets = {
+      length: pwd.length >= 8,
+      uppercase: /[A-Z]/.test(pwd),
+      number: /\d/.test(pwd),
+      special: /[!@#$%^&*(),.?":{}|<>]/.test(pwd)
+    };
+
+    const score = Object.values(meets).filter(Boolean).length;
+    const feedback = [];
+
+    if (!meets.length) feedback.push('At least 8 characters');
+    if (!meets.uppercase) feedback.push('Contains uppercase letter');
+    if (!meets.number) feedback.push('Contains number');
+    if (!meets.special) feedback.push('Contains special character');
+
+    let strengthText = 'Very Weak';
+    if (score === 1) strengthText = 'Weak';
+    else if (score === 2) strengthText = 'Fair';
+    else if (score === 3) strengthText = 'Good';
+    else if (score === 4) strengthText = 'Strong';
+
+    setPasswordStrength({
+      score,
+      feedback: [`Password Strength: ${strengthText}`, ...feedback],
+      meets
+    });
+  };
+
+  // Handle form submissions
+  const handleEmailSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isValidIdentifier || !captcha || !captchaAnswer.trim()) return;
+
+    setLoading(true);
+    setError('');
+
+    try {
+      // Verify captcha first
+      const captchaResponse = await fetch('/api/captcha/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId: captcha.sessionId,
+          answer: captchaAnswer.trim()
+        })
+      });
+
+      const captchaResult = await captchaResponse.json();
+      if (!captchaResult.valid) {
+        setError('Invalid captcha. Please try again.');
+        generateCaptcha();
+        setCaptchaAnswer('');
+        return;
+      }
+
+      // Send reset OTP
+      const response = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          identifier: identifier.trim(),
+          type: identifierType
+        })
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        setStep('otp');
+        setSessionTimeout(0); // Reset for OTP step
+        setSuccess(data.message);
+      } else {
+        setError(data.message || 'Failed to send reset code');
+        generateCaptcha();
+        setCaptchaAnswer('');
+      }
+    } catch (error) {
+      setError('Network error. Please try again.');
+      generateCaptcha();
+      setCaptchaAnswer('');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOtpSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (otpCode.length !== 6) return;
+
+    setLoading(true);
+    setError('');
+
+    try {
+      const response = await fetch('/api/auth/verify-reset-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          identifier: identifier.trim(),
+          otp: otpCode,
+          type: identifierType
+        })
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        setStep('reset');
+        setSessionTimeout(0); // Reset for password reset step
+        setSuccess('OTP verified. Please set your new password.');
+      } else {
+        setError(data.message || 'Invalid OTP');
+        setOtpCode('');
+      }
+    } catch (error) {
+      setError('Network error. Please try again.');
+      setOtpCode('');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePasswordReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+    if (passwordStrength.score < 2) {
+      setError('Password is too weak. Please follow the requirements.');
+      return;
+    }
+    if (!captcha || !captchaAnswer.trim()) {
+      setError('Please complete the captcha');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
+    try {
+      // Verify captcha first
+      const captchaResponse = await fetch('/api/captcha/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId: captcha.sessionId,
+          answer: captchaAnswer.trim()
+        })
+      });
+
+      const captchaResult = await captchaResponse.json();
+      if (!captchaResult.valid) {
+        setError('Invalid captcha. Please try again.');
+        generateCaptcha();
+        setCaptchaAnswer('');
+        return;
+      }
+
+      const response = await fetch('/api/auth/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          identifier: identifier.trim(),
+          password: password,
+          type: identifierType
+        })
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        setStep('success');
+        setSuccess('Password reset successfully! An email confirmation has been sent.');
+      } else {
+        setError(data.message || 'Failed to reset password');
+        generateCaptcha();
+        setCaptchaAnswer('');
+      }
+    } catch (error) {
+      setError('Network error. Please try again.');
+      generateCaptcha();
+      setCaptchaAnswer('');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Initialize captcha on mount and step changes
+  useEffect(() => {
+    if (step === 'email' || step === 'reset') {
+      generateCaptcha();
+    }
+  }, [step]);
+
+  // Validate identifier on change
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (identifier.trim()) {
+        validateIdentifier(identifier);
+      } else {
+        setIsValidIdentifier(false);
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [identifier]);
+
+  // Check password strength
+  useEffect(() => {
+    if (password) {
+      checkPasswordStrength(password);
+    }
+  }, [password]);
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+      <Card className="w-full max-w-md mx-4">
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl font-bold text-gray-900">
+            {step === 'email' && 'Forgot Password'}
+            {step === 'otp' && 'Verify OTP'}
+            {step === 'reset' && 'Reset Password'}
+            {step === 'success' && 'Password Reset'}
+          </CardTitle>
+          {(step === 'email' || step === 'reset') && sessionTimeout > 0 && (
+            <div className="text-sm text-gray-600">
+              Session expires in: {formatTime(sessionTimeout)}
+            </div>
+          )}
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {error && (
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+          
+          {success && (
+            <Alert>
+              <AlertDescription className="text-green-600">{success}</AlertDescription>
+            </Alert>
+          )}
+
+          {step === 'email' && (
+            <form onSubmit={handleEmailSubmit} className="space-y-4">
+              <div>
+                <Label htmlFor="identifier">Email or Phone Number</Label>
+                <div className="relative">
+                  <Input
+                    id="identifier"
+                    type="text"
+                    placeholder="Enter email or phone number"
+                    value={identifier}
+                    onChange={(e) => setIdentifier(e.target.value)}
+                    className="pr-10"
+                    required
+                  />
+                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                    {isValidating ? (
+                      <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                    ) : identifier && (
+                      isValidIdentifier ? (
+                        <CheckCircle className="w-4 h-4 text-green-500" />
+                      ) : (
+                        <XCircle className="w-4 h-4 text-red-500" />
+                      )
+                    )}
+                  </div>
+                </div>
+                {identifier && !isValidating && !isValidIdentifier && (
+                  <p className="text-sm text-red-600 mt-1">
+                    No account found with this {identifier.includes('@') ? 'email' : 'phone number'}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <Label htmlFor="captcha">Captcha</Label>
+                <div className="flex items-center space-x-2 mb-2">
+                  {captchaCanvas && (
+                    <img 
+                      src={captchaCanvas} 
+                      alt="Captcha" 
+                      className="border rounded"
+                    />
+                  )}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={generateCaptcha}
+                  >
+                    Refresh
+                  </Button>
+                </div>
+                <Input
+                  id="captcha"
+                  type="text"
+                  placeholder="Enter captcha"
+                  value={captchaAnswer}
+                  onChange={(e) => setCaptchaAnswer(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="flex space-x-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setLocation('/login')}
+                  className="flex-1"
+                >
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Back to Login
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={!isValidIdentifier || !captchaAnswer.trim() || loading}
+                  className="flex-1"
+                >
+                  {loading ? 'Sending...' : 'Continue'}
+                </Button>
+              </div>
+            </form>
+          )}
+
+          {step === 'otp' && (
+            <form onSubmit={handleOtpSubmit} className="space-y-4">
+              <div className="text-center">
+                <p className="text-sm text-gray-600 mb-4">
+                  Enter the 6-digit code sent to your {identifierType}
+                </p>
+                <div className="flex justify-center">
+                  <InputOTP
+                    maxLength={6}
+                    value={otpCode}
+                    onChange={setOtpCode}
+                  >
+                    <InputOTPGroup>
+                      <InputOTPSlot index={0} />
+                      <InputOTPSlot index={1} />
+                      <InputOTPSlot index={2} />
+                      <InputOTPSlot index={3} />
+                      <InputOTPSlot index={4} />
+                      <InputOTPSlot index={5} />
+                    </InputOTPGroup>
+                  </InputOTP>
+                </div>
+              </div>
+
+              <div className="flex space-x-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setStep('email')}
+                  className="flex-1"
+                >
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Back
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={otpCode.length !== 6 || loading}
+                  className="flex-1"
+                >
+                  {loading ? 'Verifying...' : 'Verify'}
+                </Button>
+              </div>
+            </form>
+          )}
+
+          {step === 'reset' && (
+            <form onSubmit={handlePasswordReset} className="space-y-4">
+              <div>
+                <Label htmlFor="password">New Password</Label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="Create a strong password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="pr-10"
+                    required
+                  />
+                  <button
+                    type="button"
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="w-4 h-4 text-gray-400" />
+                    ) : (
+                      <Eye className="w-4 h-4 text-gray-400" />
+                    )}
+                  </button>
+                </div>
+                {password && (
+                  <div className="mt-2 space-y-1">
+                    {passwordStrength.feedback.map((item, index) => (
+                      <div
+                        key={index}
+                        className={`text-xs flex items-center space-x-1 ${
+                          index === 0
+                            ? passwordStrength.score === 4
+                              ? 'text-green-600'
+                              : passwordStrength.score >= 2
+                              ? 'text-yellow-600'
+                              : 'text-red-600'
+                            : passwordStrength.meets[
+                                Object.keys(passwordStrength.meets)[index - 1] as keyof typeof passwordStrength.meets
+                              ]
+                            ? 'text-green-600'
+                            : 'text-gray-500'
+                        }`}
+                      >
+                        {index === 0 ? (
+                          <span className="font-medium">{item}</span>
+                        ) : (
+                          <>
+                            {passwordStrength.meets[
+                              Object.keys(passwordStrength.meets)[index - 1] as keyof typeof passwordStrength.meets
+                            ] ? (
+                              <CheckCircle className="w-3 h-3" />
+                            ) : (
+                              <XCircle className="w-3 h-3" />
+                            )}
+                            <span>{item}</span>
+                          </>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <Label htmlFor="confirmPassword">Confirm Password</Label>
+                <div className="relative">
+                  <Input
+                    id="confirmPassword"
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    placeholder="Re-enter your password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="pr-10"
+                    required
+                  />
+                  <button
+                    type="button"
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  >
+                    {showConfirmPassword ? (
+                      <EyeOff className="w-4 h-4 text-gray-400" />
+                    ) : (
+                      <Eye className="w-4 h-4 text-gray-400" />
+                    )}
+                  </button>
+                </div>
+                {confirmPassword && password !== confirmPassword && (
+                  <p className="text-xs text-red-600 mt-1">Passwords do not match</p>
+                )}
+              </div>
+
+              <div>
+                <Label htmlFor="resetCaptcha">Captcha</Label>
+                <div className="flex items-center space-x-2 mb-2">
+                  {captchaCanvas && (
+                    <img 
+                      src={captchaCanvas} 
+                      alt="Captcha" 
+                      className="border rounded"
+                    />
+                  )}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={generateCaptcha}
+                  >
+                    Refresh
+                  </Button>
+                </div>
+                <Input
+                  id="resetCaptcha"
+                  type="text"
+                  placeholder="Enter captcha"
+                  value={captchaAnswer}
+                  onChange={(e) => setCaptchaAnswer(e.target.value)}
+                  required
+                />
+              </div>
+
+              <Button
+                type="submit"
+                disabled={
+                  !password || 
+                  !confirmPassword || 
+                  password !== confirmPassword || 
+                  passwordStrength.score < 2 || 
+                  !captchaAnswer.trim() || 
+                  loading
+                }
+                className="w-full"
+              >
+                {loading ? 'Resetting...' : 'Reset Password'}
+              </Button>
+            </form>
+          )}
+
+          {step === 'success' && (
+            <div className="text-center space-y-4">
+              <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+                <CheckCircle className="w-8 h-8 text-green-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Password Reset Successfully!
+                </h3>
+                <p className="text-sm text-gray-600 mt-2">
+                  Your password has been reset successfully. A confirmation email has been sent to your email address.
+                </p>
+              </div>
+              <Button
+                onClick={() => setLocation('/login')}
+                className="w-full"
+              >
+                Back to Login
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

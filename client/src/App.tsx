@@ -9,6 +9,7 @@ import SignupPage from "@/pages/signup";
 import ChooseRolePage from "@/pages/choose-role";
 import LoginPage from "@/pages/login";
 import HomePage from "@/pages/home";
+import { ForgotPassword } from "@/components/ForgotPassword";
 
 function Router() {
   return (
@@ -17,6 +18,7 @@ function Router() {
       <Route path="/signup" component={SignupPage} />
       <Route path="/choose-role" component={ChooseRolePage} />
       <Route path="/login" component={LoginPage} />
+      <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/home" component={HomePage} />
       {/* Fallback to 404 */}
       <Route component={NotFound} />

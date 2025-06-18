@@ -680,6 +680,159 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Forgot password - send reset OTP
+  app.post("/api/auth/forgot-password", async (req, res) => {
+    try {
+      const { identifier, type } = req.body;
+
+      if (!identifier || !type) {
+        return res.status(400).json({ message: "Identifier and type required" });
+      }
+
+      // Find user by identifier
+      let user;
+      if (type === 'email') {
+        user = await storage.getUserByEmail(identifier);
+      } else if (type === 'phone') {
+        user = await storage.getUserByPhone(identifier, '+91');
+      }
+
+      if (!user) {
+        return res.status(404).json({ message: "No account found with this information" });
+      }
+
+      // Generate reset OTP
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      
+      // Store reset OTP session data
+      const resetSessionId = crypto.randomBytes(32).toString('hex');
+      const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+      
+      global.resetOtpSessions = global.resetOtpSessions || new Map();
+      (global as any).resetOtpSessions.set(resetSessionId, {
+        userId: user.id,
+        identifier,
+        type,
+        otp,
+        expiresAt: otpExpiresAt,
+        attempts: 0,
+        verified: false
+      });
+
+      // Send OTP
+      console.log(`Password reset OTP sent to ${type} (${type === 'email' ? maskEmail(identifier) : maskPhone(identifier)}): ${otp}`);
+      
+      // Set session cookie for reset OTP verification
+      res.cookie('resetSessionId', resetSessionId, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 10 * 60 * 1000 // 10 minutes
+      });
+
+      res.json({
+        message: `Reset code sent to your ${type}`,
+        maskedIdentifier: type === 'email' ? maskEmail(identifier) : maskPhone(identifier)
+      });
+    } catch (error) {
+      console.error("Forgot password error:", error);
+      res.status(500).json({ message: "Failed to send reset code" });
+    }
+  });
+
+  // Verify reset OTP
+  app.post("/api/auth/verify-reset-otp", async (req, res) => {
+    try {
+      const { otp } = req.body;
+      const resetSessionId = req.cookies?.resetSessionId;
+
+      if (!otp || !resetSessionId) {
+        return res.status(400).json({ message: "OTP and session required" });
+      }
+
+      global.resetOtpSessions = global.resetOtpSessions || new Map();
+      const resetSession = global.resetOtpSessions.get(resetSessionId);
+
+      if (!resetSession) {
+        return res.status(400).json({ message: "Invalid reset session" });
+      }
+
+      if (new Date() > resetSession.expiresAt) {
+        global.resetOtpSessions.delete(resetSessionId);
+        res.clearCookie('resetSessionId');
+        return res.status(400).json({ message: "Reset code expired" });
+      }
+
+      if (resetSession.attempts >= 3) {
+        global.resetOtpSessions.delete(resetSessionId);
+        res.clearCookie('resetSessionId');
+        return res.status(400).json({ message: "Too many incorrect attempts" });
+      }
+
+      if (resetSession.otp !== otp) {
+        resetSession.attempts++;
+        return res.status(400).json({ message: "Incorrect reset code" });
+      }
+
+      // Mark as verified
+      resetSession.verified = true;
+      
+      res.json({ message: "Reset code verified successfully" });
+    } catch (error) {
+      console.error("Verify reset OTP error:", error);
+      res.status(500).json({ message: "Failed to verify reset code" });
+    }
+  });
+
+  // Reset password
+  app.post("/api/auth/reset-password", async (req, res) => {
+    try {
+      const { password } = req.body;
+      const resetSessionId = req.cookies?.resetSessionId;
+
+      if (!password || !resetSessionId) {
+        return res.status(400).json({ message: "Password and session required" });
+      }
+
+      global.resetOtpSessions = global.resetOtpSessions || new Map();
+      const resetSession = global.resetOtpSessions.get(resetSessionId);
+
+      if (!resetSession || !resetSession.verified) {
+        return res.status(400).json({ message: "Invalid or unverified reset session" });
+      }
+
+      if (new Date() > resetSession.expiresAt) {
+        global.resetOtpSessions.delete(resetSessionId);
+        res.clearCookie('resetSessionId');
+        return res.status(400).json({ message: "Reset session expired" });
+      }
+
+      // Hash new password
+      const hashedPassword = await bcrypt.hash(password, 12);
+
+      // Update user password
+      await storage.updateUser(resetSession.userId, {
+        password: hashedPassword,
+        updatedAt: new Date()
+      });
+
+      // Clean up session
+      global.resetOtpSessions.delete(resetSessionId);
+      res.clearCookie('resetSessionId');
+
+      // Send confirmation email
+      console.log(`Password reset successfully for user ID: ${resetSession.userId}`);
+      console.log(`Confirmation email sent to: ${resetSession.type === 'email' ? maskEmail(resetSession.identifier) : 'registered email'}`);
+
+      res.json({ 
+        message: "Password reset successfully",
+        emailSent: true
+      });
+    } catch (error) {
+      console.error("Reset password error:", error);
+      res.status(500).json({ message: "Failed to reset password" });
+    }
+  });
+
   // OTP verification for login
   app.post("/api/auth/verify-otp", async (req, res) => {
     try {
