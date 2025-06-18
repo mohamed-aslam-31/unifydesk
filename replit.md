@@ -151,6 +151,7 @@ UnifyDesk is a comprehensive business management platform that serves as an e-co
 - June 18, 2025: Fixed login database error by expanding OTP type column from 10 to 50 characters, resolving "value too long" constraint issue
 - June 18, 2025: Successfully migrated from Replit Agent to standard Replit environment with PostgreSQL database setup
 - June 18, 2025: Added PostgreSQL database with Drizzle ORM schema push, upgraded from Replit Database to full PostgreSQL
+- June 18, 2025: Enhanced forgot password page with Three.js floating background, header/footer, hidden session timer, and live database validation for email/phone verification
 
 ## User Preferences
 
