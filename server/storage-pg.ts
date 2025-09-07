@@ -293,14 +293,14 @@ export class PostgreSQLStorage implements IStorage {
       country: user.country,
       state: user.state,
       city: user.city,
-      address: user.address || undefined,
+      address: user.address ?? undefined,
       password: user.password,
 
-      role: user.role || undefined,
+      role: user.role ?? undefined,
       roleStatus: user.roleStatus,
       emailVerified: user.emailVerified,
       phoneVerified: user.phoneVerified,
-      profilePicture: user.profilePicture || undefined,
+      profilePicture: user.profilePicture ?? undefined,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     };
@@ -322,8 +322,8 @@ export class PostgreSQLStorage implements IStorage {
       identifier: attempt.identifier,
       type: attempt.type,
       attempts: attempt.attempts,
-      lastAttempt: attempt.lastAttempt || undefined,
-      blockedUntil: attempt.blockedUntil || undefined,
+      lastAttempt: attempt.lastAttempt ?? undefined,
+      blockedUntil: attempt.blockedUntil ?? undefined,
       createdAt: attempt.createdAt,
     };
   }
