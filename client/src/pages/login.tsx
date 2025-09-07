@@ -288,6 +288,10 @@ export default function LoginPage() {
         description: "Welcome back to UnifyDesk",
       });
 
+      // Use fresh user data from server response instead of stale state
+      const userRole = result.user?.role;
+      const roleStatus = result.user?.roleStatus;
+
       // Redirect based on user role and status
       if (!userRole) {
         setLocation("/choose-role");
