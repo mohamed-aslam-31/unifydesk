@@ -396,22 +396,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/auth/verify-otp", async (req, res) => {
-    try {
-      const { identifier, type, otp } = req.body;
-      
-      // TODO: Verify actual OTP
-      // For demo, accept any 6-digit OTP
-      if (!/^\d{6}$/.test(otp)) {
-        return res.status(400).json({ message: "Invalid OTP format" });
-      }
-
-      res.json({ message: "OTP verified successfully" });
-    } catch (error) {
-      console.error("Verify OTP error:", error);
-      res.status(500).json({ message: "Failed to verify OTP" });
-    }
-  });
 
   // Signup endpoint
   app.post("/api/auth/signup", async (req, res) => {
