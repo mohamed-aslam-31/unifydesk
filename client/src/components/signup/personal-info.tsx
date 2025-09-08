@@ -822,7 +822,6 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
                       />
                       <div className="absolute inset-y-0 right-0 pr-3 flex items-center space-x-2">
                         {phoneStatus === "checking" && <Loader2 className="h-4 w-4 animate-spin text-slate-400" />}
-                        {phoneStatus === "valid" && !phoneVerified && <Check className="h-4 w-4 text-green-500" />}
                         {phoneStatus === "invalid" && <X className="h-4 w-4 text-red-500" />}
                         {!phoneVerified && phoneStatus !== "checking" && phoneStatus === "valid" && (
                           <Button
@@ -835,7 +834,6 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
                             Verify
                           </Button>
                         )}
-                        {phoneVerified && <Check className="h-4 w-4 text-green-500" />}
                       </div>
                     </div>
                   </div>
