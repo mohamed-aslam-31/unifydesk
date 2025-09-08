@@ -82,10 +82,9 @@ export function SignupWizard({ onComplete }: SignupWizardProps) {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 transition-all duration-300 relative overflow-hidden">
       {/* Three.js Floating Background */}
       <FloatingBackground className="opacity-30 dark:opacity-20" />
-      
       {/* Welcome Section */}
       {currentStep !== "complete" && (
-        <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border-b border-slate-200 dark:border-slate-700 py-6 sm:py-8 relative z-10">
+        <div className="dark:bg-slate-800/80 backdrop-blur-sm border-b border-slate-200 dark:border-slate-700 py-6 sm:py-8 relative z-10 bg-[#2a2c3700]">
           <div className="max-w-2xl mx-auto px-2 sm:px-4 lg:px-8">
             <div className="text-center space-y-4">
               {/* Animated Icon */}
@@ -116,7 +115,6 @@ export function SignupWizard({ onComplete }: SignupWizardProps) {
           </div>
         </div>
       )}
-
       {/* Step Content */}
       <div className="py-4 sm:py-8 flex items-center justify-center relative z-10">
         <div className="w-full max-w-2xl px-1 sm:px-4">
