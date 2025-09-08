@@ -8,7 +8,11 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { Loader2, Check, X } from "lucide-react";
+import { Loader2, Check, X, CalendarIcon } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { format, parseISO } from "date-fns";
+import { cn } from "@/lib/utils";
 import { signupSchema } from "@shared/schema";
 import { OTPInput } from "./otp-input";
 import { TermsModal } from "./terms-modal";
@@ -818,94 +822,46 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
               <FormField
                 control={form.control}
                 name="dateOfBirth"
-                render={({ field }) => {
-                  const currentValue = field.value || "";
-                  const [year, month, day] = currentValue.split("-");
-                  
-                  const handleDateChange = (type: "day" | "month" | "year", value: string) => {
-                    const currentYear = year || "";
-                    const currentMonth = month || "";
-                    const currentDay = day || "";
-                    
-                    let newYear = currentYear;
-                    let newMonth = currentMonth;
-                    let newDay = currentDay;
-                    
-                    if (type === "year") newYear = value;
-                    if (type === "month") newMonth = value.padStart(2, "0");
-                    if (type === "day") newDay = value.padStart(2, "0");
-                    
-                    if (newYear && newMonth && newDay) {
-                      field.onChange(`${newYear}-${newMonth}-${newDay}`);
-                    }
-                  };
-                  
-                  return (
-                    <FormItem>
-                      <FormLabel>Date of Birth *</FormLabel>
-                      <div className="grid grid-cols-3 gap-1">
-                        <Select onValueChange={(value) => handleDateChange("day", value)} value={day || ""}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Day" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
-                              <SelectItem key={d} value={d.toString()}>
-                                {d}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        
-                        <Select onValueChange={(value) => handleDateChange("month", value)} value={month || ""}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Month" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {[
-                              { value: "1", label: "January" },
-                              { value: "2", label: "February" },
-                              { value: "3", label: "March" },
-                              { value: "4", label: "April" },
-                              { value: "5", label: "May" },
-                              { value: "6", label: "June" },
-                              { value: "7", label: "July" },
-                              { value: "8", label: "August" },
-                              { value: "9", label: "September" },
-                              { value: "10", label: "October" },
-                              { value: "11", label: "November" },
-                              { value: "12", label: "December" },
-                            ].map((m) => (
-                              <SelectItem key={m.value} value={m.value}>
-                                {m.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        
-                        <Select onValueChange={(value) => handleDateChange("year", value)} value={year || ""}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Year" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {Array.from({ length: 83 }, (_, i) => 2006 - i).map((y) => (
-                              <SelectItem key={y} value={y.toString()}>
-                                {y}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <FormMessage />
-                    </FormItem>
-                  );
-                }}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Date of Birth *</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant={"outline"}
+                            className={cn(
+                              "w-full pl-3 text-left font-normal",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            {field.value ? (
+                              format(parseISO(field.value), "PPP")
+                            ) : (
+                              <span>Pick a date</span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.value ? parseISO(field.value) : undefined}
+                          onSelect={(date) => field.onChange(date?.toISOString().split('T')[0])}
+                          disabled={(date) =>
+                            date > new Date() || date < new Date("1900-01-01")
+                          }
+                          initialFocus
+                          captionLayout="dropdown-buttons"
+                          fromYear={1924}
+                          toYear={2006}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
             </div>
           </div>
