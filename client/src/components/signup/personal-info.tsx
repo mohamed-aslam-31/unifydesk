@@ -747,13 +747,13 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
   };
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="w-full max-w-4xl mx-auto p-2 sm:p-4 md:p-6 space-y-3 sm:space-y-4 md:space-y-6">
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3 sm:space-y-4">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3 sm:space-y-4 md:space-y-5">
           {/* Personal Information */}
-          <div className="space-y-2 sm:space-y-4">
-            <h3 className="font-semibold text-slate-900 dark:text-white text-sm sm:text-base">Personal Information</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4">
+          <div className="space-y-2 sm:space-y-3 md:space-y-4">
+            <h3 className="font-semibold text-slate-900 dark:text-white text-sm sm:text-base md:text-lg px-2">Personal Information</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-3 md:gap-4">
               {/* First Name */}
               <FormField
                 control={form.control}
@@ -766,6 +766,7 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
                         placeholder="Enter first name" 
                         {...field}
                         onChange={(e) => handleFirstNameChange(e.target.value)}
+                        className="p-2.5 text-sm"
                       />
                     </FormControl>
                     {firstNameError && (
@@ -788,6 +789,7 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
                         placeholder="Enter last name" 
                         {...field}
                         onChange={(e) => handleLastNameChange(e.target.value)}
+                        className="p-2.5 text-sm"
                       />
                     </FormControl>
                     {lastNameError && (
@@ -812,7 +814,7 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
                         placeholder="Enter username" 
                         {...field}
                         onChange={(e) => handleUsernameChange(e.target.value)}
-                        className="pr-10"
+                        className="p-2.5 pr-10 text-sm"
                       />
                       <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
                         {usernameStatus === "checking" && <Loader2 className="h-4 w-4 animate-spin text-slate-400" />}
@@ -830,7 +832,7 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
             />
 
             {/* Gender and Date of Birth */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-3 md:gap-4">
               <FormField
                 control={form.control}
                 name="gender"
@@ -869,7 +871,7 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
                           onChange={(e) => handleDateOfBirthChange(e.target.value)}
                           max="2006-12-31"
                           min="1924-01-01"
-                          className="pr-10"
+                          className="p-2.5 pr-10 text-sm"
                         />
                         <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
                           {dobStatus === "valid" && field.value && <Check className="h-4 w-4 text-green-500" />}
@@ -888,8 +890,8 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
           </div>
 
           {/* Contact Information */}
-          <div className="space-y-2 sm:space-y-4">
-            <h3 className="font-semibold text-slate-900 dark:text-white text-sm sm:text-base">Contact Information</h3>
+          <div className="space-y-2 sm:space-y-3 md:space-y-4">
+            <h3 className="font-semibold text-slate-900 dark:text-white text-sm sm:text-base md:text-lg px-2">Contact Information</h3>
             
             {/* Email */}
             <FormField
@@ -905,7 +907,7 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
                         placeholder="Enter email address" 
                         {...field}
                         onChange={(e) => handleEmailChange(e.target.value)}
-                        className="pr-20"
+                        className="p-2.5 pr-20 text-sm"
                       />
                       <div className="absolute inset-y-0 right-0 pr-3 flex items-center space-x-2">
                         {emailStatus === "checking" && <Loader2 className="h-4 w-4 animate-spin text-slate-400" />}
@@ -951,7 +953,7 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
                   <FormLabel>Phone Number *</FormLabel>
                   <FormControl>
                     <div className="flex space-x-1 sm:space-x-2">
-                      <div className="flex items-center px-3 py-2 border border-input bg-background rounded-md text-sm font-medium">
+                      <div className="flex items-center px-2 sm:px-3 py-2 border border-input bg-background rounded-md text-xs sm:text-sm font-medium">
                         🇮🇳 +91
                       </div>
                       <div className="flex-1 relative">
@@ -960,7 +962,7 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
                           placeholder="Enter phone number" 
                           {...field}
                           onChange={(e) => handlePhoneChange(e.target.value)}
-                          className="pr-20"
+                          className="p-2.5 pr-20 text-sm"
                         />
                         <div className="absolute inset-y-0 right-0 pr-3 flex items-center space-x-2">
                           {phoneStatus === "checking" && <Loader2 className="h-4 w-4 animate-spin text-slate-400" />}
@@ -1052,9 +1054,9 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
           </div>
 
           {/* Location Information */}
-          <div className="space-y-2 sm:space-y-4">
-            <h3 className="font-semibold text-slate-900 dark:text-white text-sm sm:text-base">Location Information</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4">
+          <div className="space-y-2 sm:space-y-3 md:space-y-4">
+            <h3 className="font-semibold text-slate-900 dark:text-white text-sm sm:text-base md:text-lg px-2">Location Information</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3 md:gap-4">
               <FormField
                 control={form.control}
                 name="country"
@@ -1149,6 +1151,7 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
                       placeholder="Enter your complete address"
                       rows={3}
                       {...field} 
+                      className="p-2.5 text-sm resize-none"
                     />
                   </FormControl>
                   <FormMessage />
@@ -1158,10 +1161,10 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
           </div>
 
           {/* Account Security */}
-          <div className="space-y-2 sm:space-y-4">
-            <h3 className="font-semibold text-slate-900 dark:text-white text-sm sm:text-base">Account Security</h3>
+          <div className="space-y-2 sm:space-y-3 md:space-y-4">
+            <h3 className="font-semibold text-slate-900 dark:text-white text-sm sm:text-base md:text-lg px-2">Account Security</h3>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-3 md:gap-4">
               <FormField
                 control={form.control}
                 name="password"
@@ -1174,7 +1177,7 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
                           type={showPassword ? "text" : "password"} 
                           placeholder="Create password" 
                           {...field} 
-                          className="pr-10"
+                          className="p-2.5 pr-10 text-sm"
                         />
                         <button
                           type="button"
@@ -1213,7 +1216,7 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
                             type={showConfirmPassword ? "text" : "password"} 
                             placeholder="Confirm password" 
                             {...field} 
-                            className="pr-10"
+                            className="p-2.5 pr-10 text-sm"
                           />
                           <button
                             type="button"
@@ -1243,8 +1246,8 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
           </div>
 
           {/* CAPTCHA */}
-          <div className="space-y-2">
-            <h3 className="font-semibold text-slate-900 dark:text-white text-sm sm:text-base">Security Verification</h3>
+          <div className="space-y-2 sm:space-y-3">
+            <h3 className="font-semibold text-slate-900 dark:text-white text-sm sm:text-base md:text-lg px-2">Security Verification</h3>
             <VisualCaptcha onVerified={setCaptchaSessionId} />
           </div>
 
