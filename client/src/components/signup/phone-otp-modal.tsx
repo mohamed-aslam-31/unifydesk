@@ -98,13 +98,15 @@ export function PhoneOtpModal({
       return;
     }
     
-    // Check if still in cooldown
+    // Check if still in cooldown (only show toast for manual resend actions)
     if (cooldownTime > 0) {
-      toast({
-        title: "Please wait",
-        description: `Wait ${formatCooldown(cooldownTime)} before requesting another OTP`,
-        variant: "destructive",
-      });
+      if (isResendAction) {
+        toast({
+          title: "Please wait",
+          description: `Wait ${formatCooldown(cooldownTime)} before requesting another OTP`,
+          variant: "destructive",
+        });
+      }
       return;
     }
     
@@ -146,11 +148,13 @@ export function PhoneOtpModal({
               onCooldownUpdate(phone, newCooldown);
             }
           }, 0);
-          toast({
-            title: "Please wait",
-            description: `Wait ${formatCooldown(newCooldown)} before requesting another OTP`,
-            variant: "destructive",
-          });
+          if (isResendAction) {
+            toast({
+              title: "Please wait",
+              description: `Wait ${formatCooldown(newCooldown)} before requesting another OTP`,
+              variant: "destructive",
+            });
+          }
           return;
         }
         
