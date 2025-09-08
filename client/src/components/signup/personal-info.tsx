@@ -10,12 +10,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Loader2, Check, X } from "lucide-react";
 import { signupSchema } from "@shared/schema";
-import { OTPInput } from "./otp-input";
 import { TermsModal } from "./terms-modal";
 import { VisualCaptcha } from "@/components/ui/visual-captcha";
 import { validateField, sendOTP, verifyOTP, signup, SignupData } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import { PhoneOtpModal } from "./phone-otp-modal";
+import { EmailOtpModal } from "./email-otp-modal";
 import { PasswordStrength } from "./password-strength";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -37,10 +37,12 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
   const [dobError, setDobError] = useState<string | null>(null);
   
   // Verification states
-  const [showEmailOTP, setShowEmailOTP] = useState(false);
+  const [showEmailOtpModal, setShowEmailOtpModal] = useState(false);
   const [showPhoneOtpModal, setShowPhoneOtpModal] = useState(false);
   const [emailVerified, setEmailVerified] = useState(false);
   const [phoneVerified, setPhoneVerified] = useState(false);
+  
+  // Phone OTP state management
   const [phoneOtpSentNumbers, setPhoneOtpSentNumbers] = useState<Set<string>>(new Set());
   const [phoneResendCounts, setPhoneResendCounts] = useState<Record<string, number>>({});
   const [phoneAttemptCounts, setPhoneAttemptCounts] = useState<Record<string, number>>({});
@@ -48,13 +50,13 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
   const [phoneBlocked, setPhoneBlocked] = useState<Set<string>>(new Set());
   const [verifiedPhoneNumbers, setVerifiedPhoneNumbers] = useState<Set<string>>(new Set());
   
-  // Email OTP states
-  const [emailOtpSendCount, setEmailOtpSendCount] = useState(0);
-  const [emailLastSent, setEmailLastSent] = useState<Date | null>(null);
-  const [emailBlocked, setEmailBlocked] = useState(false);
-  const [emailAttempts, setEmailAttempts] = useState(0);
-  const [emailCountdown, setEmailCountdown] = useState(0);
-  const [emailOtpSessionId, setEmailOtpSessionId] = useState("");
+  // Email OTP state management
+  const [emailOtpSentEmails, setEmailOtpSentEmails] = useState<Set<string>>(new Set());
+  const [emailResendCounts, setEmailResendCounts] = useState<Record<string, number>>({});
+  const [emailAttemptCounts, setEmailAttemptCounts] = useState<Record<string, number>>({});
+  const [emailCooldowns, setEmailCooldowns] = useState<Record<string, { endTime: number, seconds: number }>>({});
+  const [emailBlocked, setEmailBlocked] = useState<Set<string>>(new Set());
+  const [verifiedEmailAddresses, setVerifiedEmailAddresses] = useState<Set<string>>(new Set());
   
   // Other states
   const [lastVerifiedEmail, setLastVerifiedEmail] = useState("");
@@ -128,25 +130,43 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
     }
   }, []); // Run once on component mount
 
-  // Email OTP timer
+  // Load verified email addresses from localStorage and reset their counts
   useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (emailCountdown > 0) {
-      interval = setInterval(() => {
-        setEmailCountdown(prev => prev - 1);
-      }, 1000);
+    try {
+      const savedVerifiedEmails = localStorage.getItem('verifiedEmailAddresses');
+      if (savedVerifiedEmails) {
+        const verifiedSet = new Set<string>(JSON.parse(savedVerifiedEmails));
+        setVerifiedEmailAddresses(verifiedSet);
+        
+        // Reset counts for all verified email addresses
+        const updatedResendCounts = { ...emailResendCounts };
+        const updatedAttemptCounts = { ...emailAttemptCounts };
+        const updatedCooldowns = { ...emailCooldowns };
+        const updatedBlocked = new Set(emailBlocked);
+        
+        verifiedSet.forEach(email => {
+          updatedResendCounts[email] = 0;
+          updatedAttemptCounts[email] = 0;
+          delete updatedCooldowns[email];
+          updatedBlocked.delete(email);
+        });
+        
+        setEmailResendCounts(updatedResendCounts);
+        setEmailAttemptCounts(updatedAttemptCounts);
+        setEmailCooldowns(updatedCooldowns);
+        setEmailBlocked(updatedBlocked);
+      }
+    } catch (error) {
+      console.log('Failed to load verified email addresses');
     }
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [emailCountdown]);
+  }, []);
 
   // Reset verification when key fields change
   useEffect(() => {
     const email = form.watch("email");
     if (email !== lastVerifiedEmail && emailVerified) {
       setEmailVerified(false);
-      setShowEmailOTP(false);
+      setShowEmailOtpModal(false);
     }
   }, [form.watch("email"), emailVerified, lastVerifiedEmail]);
 
@@ -439,93 +459,95 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
     }
   };
 
-  // Email OTP Functions
-  const getEmailOTPCooldown = () => {
-    if (!emailLastSent) return 0;
-    const timeDiff = new Date().getTime() - emailLastSent.getTime();
-    const remaining = 180000 - timeDiff; // 3 minutes
-    return remaining > 0 ? Math.ceil(remaining / 1000) : 0;
-  };
-
-  const canSendEmailOTP = () => {
-    return emailCountdown === 0 && emailOtpSendCount < 5 && !emailBlocked;
-  };
-
+  // Email OTP modal handlers
   const handleSendEmailOTP = async () => {
-    if (!canSendEmailOTP()) {
-      if (emailBlocked) {
-        toast({ title: "Email OTP blocked for 5 hours due to too many attempts", variant: "destructive" });
-        return;
-      }
-      if (emailOtpSendCount >= 5) {
-        setEmailBlocked(true);
-        setTimeout(() => setEmailBlocked(false), 5 * 60 * 60 * 1000); // 5 hours
-        toast({ title: "Too many OTP attempts. Blocked for 5 hours.", variant: "destructive" });
-        return;
-      }
-      const cooldown = getEmailOTPCooldown();
-      toast({ title: `Please wait ${cooldown} seconds before requesting another OTP`, variant: "destructive" });
+    const emailValue = form.getValues('email');
+    if (!emailValue || emailStatus !== 'available') return;
+    
+    // Check if this email was already verified
+    if (lastVerifiedEmail === emailValue) {
+      setEmailVerified(true);
+      toast({
+        title: "Email already verified",
+        description: "This email address is already verified!",
+      });
       return;
     }
-
-    try {
-      const email = form.getValues("email");
-      if (!email) return;
-
-      const response = await sendOTP(email, "email");
-      setEmailOtpSessionId(response.sessionId || "");
-      setEmailOtpSendCount(prev => prev + 1);
-      setEmailLastSent(new Date());
-      setEmailCountdown(180); // 3 minutes
-      setShowEmailOTP(true);
-      
-      toast({ title: "OTP sent", description: `Verification code sent to ${email}` });
-    } catch (error) {
-      console.error("Send Email OTP error:", error);
-      toast({ title: "Failed to send OTP", description: "Please try again later", variant: "destructive" });
+    
+    // Check if this email is blocked locally
+    if (emailBlocked.has(emailValue)) {
+      toast({
+        title: "Email Blocked",
+        description: "Your email was blocked due to too many failed OTP attempts. Please try again after 5 hours.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // If OTP was already sent for this email, just open modal
+    if (emailOtpSentEmails.has(emailValue)) {
+      setShowEmailOtpModal(true);
+      return;
+    }
+    
+    // Open modal - it will auto-send OTP
+    setShowEmailOtpModal(true);
+  };
+  
+  const handleEmailModalClose = () => {
+    setShowEmailOtpModal(false);
+  };
+  
+  const handleEmailOtpSent = (email: string) => {
+    setEmailOtpSentEmails(prev => new Set(prev).add(email));
+    // Set 3-minute cooldown
+    const endTime = Date.now() + 180000; // 3 minutes from now
+    setEmailCooldowns(prev => ({ ...prev, [email]: { endTime, seconds: 180 } }));
+  };
+  
+  const handleEmailResendUpdate = (email: string, count: number) => {
+    setEmailResendCounts(prev => ({ ...prev, [email]: count }));
+  };
+  
+  const handleEmailAttemptUpdate = (email: string, count: number) => {
+    setEmailAttemptCounts(prev => ({ ...prev, [email]: count }));
+  };
+  
+  const handleEmailCooldownUpdate = (email: string, seconds: number) => {
+    if (seconds <= 0) {
+      setEmailCooldowns(prev => {
+        const newCooldowns = { ...prev };
+        delete newCooldowns[email];
+        return newCooldowns;
+      });
+    } else {
+      setEmailCooldowns(prev => ({ 
+        ...prev, 
+        [email]: { 
+          endTime: prev[email]?.endTime || Date.now() + seconds * 1000, 
+          seconds 
+        }
+      }));
     }
   };
+  
+  const handleEmailBlocked = (email: string) => {
+    setEmailBlocked(prev => new Set(prev).add(email));
+  };
 
-  const handleEmailOTPComplete = async (otp: string) => {
+  const handleEmailVerified = () => {
+    const email = form.getValues('email');
+    setEmailVerified(true);
+    setLastVerifiedEmail(email);
+    
+    // Save verified email to localStorage
     try {
-      const email = form.getValues("email");
-      const countryCode = form.getValues("countryCode");
-      
-      await verifyOTP(email, "email", otp, emailOtpSessionId);
-      setEmailVerified(true);
-      setShowEmailOTP(false);
-      setLastVerifiedEmail(email);
-      setEmailAttempts(0);
-      toast({ title: "Email verified successfully" });
-    } catch (error: any) {
-      try {
-        const errorData = JSON.parse(error.message);
-        setEmailAttempts(prev => prev + 1);
-        
-        if (errorData.showWarning) {
-          toast({ 
-            title: "Warning", 
-            description: errorData.message,
-            variant: "destructive" 
-          });
-        } else if (errorData.blockedUntil) {
-          setEmailBlocked(true);
-          setShowEmailOTP(false);
-          toast({ 
-            title: "Account blocked", 
-            description: "Too many failed attempts. Please try again after 5 hours.",
-            variant: "destructive" 
-          });
-        } else {
-          toast({ 
-            title: "Invalid OTP", 
-            description: `${errorData.remainingAttempts || 0} attempts remaining`,
-            variant: "destructive" 
-          });
-        }
-      } catch {
-        toast({ title: "Invalid OTP", variant: "destructive" });
-      }
+      const verifiedEmails = JSON.parse(localStorage.getItem('verifiedEmailAddresses') || '[]');
+      verifiedEmails.push(email);
+      localStorage.setItem('verifiedEmailAddresses', JSON.stringify(verifiedEmails));
+      setVerifiedEmailAddresses(prev => new Set(prev).add(email));
+    } catch (error) {
+      console.log('Failed to save verified email to localStorage');
     }
   };
 
@@ -934,35 +956,6 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
               )}
             />
 
-            {/* Email OTP */}
-            {showEmailOTP && (
-              <div className="bg-slate-100 dark:bg-slate-700 rounded-lg p-4">
-                <div className="text-center">
-                  <h3 className="font-semibold text-slate-900 dark:text-white mb-2">Verify Your Email</h3>
-                  <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
-                    Enter the 6-digit code sent to your email
-                  </p>
-                  <OTPInput onComplete={handleEmailOTPComplete} />
-                  <div className="mt-4 flex flex-col items-center space-y-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={handleSendEmailOTP}
-                      disabled={!canSendEmailOTP()}
-                      className="text-xs"
-                    >
-                      {canSendEmailOTP() ? "Resend OTP" : `Resend in ${emailCountdown}s`}
-                    </Button>
-                    <p className="text-xs text-slate-500">
-                      {emailOtpSendCount}/5 attempts used
-                      {emailOtpSendCount >= 5 && " - Max attempts reached"}
-                    </p>
-                    <p className="text-xs text-slate-500">Check your spam folder if you don't see the email</p>
-                  </div>
-                </div>
-              </div>
-            )}
 
             {/* Phone */}
             <FormField
@@ -1053,6 +1046,23 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
               onAttemptUpdate={handlePhoneAttemptUpdate}
               onCooldownUpdate={handlePhoneCooldownUpdate}
               onPhoneBlocked={handlePhoneBlocked}
+            />
+
+            {/* Email OTP Modal */}
+            <EmailOtpModal
+              open={showEmailOtpModal}
+              onClose={handleEmailModalClose}
+              email={form.watch('email') || ''}
+              onVerified={handleEmailVerified}
+              autoSendOtp={false}
+              onOtpSent={handleEmailOtpSent}
+              initialResendCount={emailResendCounts[form.watch('email') || ''] || 0}
+              initialAttemptCount={emailAttemptCounts[form.watch('email') || ''] || 0}
+              initialCooldown={emailCooldowns[form.watch('email') || '']}
+              onResendUpdate={handleEmailResendUpdate}
+              onAttemptUpdate={handleEmailAttemptUpdate}
+              onCooldownUpdate={handleEmailCooldownUpdate}
+              onEmailBlocked={handleEmailBlocked}
             />
           </div>
 
