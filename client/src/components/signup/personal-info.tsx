@@ -333,6 +333,7 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
     } else {
       setDobStatus("valid");
       setDobError(null);
+      form.clearErrors("dateOfBirth"); // Clear form validation errors
     }
   };
 
@@ -370,6 +371,7 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
       const isAvailable = await validateField("username", value);
       if (isAvailable) {
         setUsernameStatus("available");
+        form.clearErrors("username"); // Clear form validation errors
       } else {
         setUsernameStatus("taken");
         setUsernameError("Username is already taken");
@@ -425,6 +427,7 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
       const isAvailable = await validateField("email", value);
       if (isAvailable) {
         setEmailStatus("available");
+        form.clearErrors("email"); // Clear form validation errors
       } else {
         setEmailStatus("taken");
       }
@@ -453,6 +456,7 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
       const isAvailable = await validateField("phone", `+91${value}`);
       if (isAvailable) {
         setPhoneStatus("valid");
+        form.clearErrors("phone"); // Clear form validation errors
       } else {
         setPhoneStatus("taken");
       }
