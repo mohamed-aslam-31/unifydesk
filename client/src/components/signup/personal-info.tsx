@@ -45,6 +45,7 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
   const [phoneOtpSentNumbers, setPhoneOtpSentNumbers] = useState<Set<string>>(new Set());
   const [phoneResendCounts, setPhoneResendCounts] = useState<Record<string, number>>({});
   const [phoneAttemptCounts, setPhoneAttemptCounts] = useState<Record<string, number>>({});
+  const [phoneCooldowns, setPhoneCooldowns] = useState<Record<string, { endTime: number, seconds: number }>>({});
   
   // Email OTP states
   const [emailOtpSendCount, setEmailOtpSendCount] = useState(0);
@@ -477,6 +478,9 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
   
   const handlePhoneOtpSent = (phone: string) => {
     setPhoneOtpSentNumbers(prev => new Set(prev).add(phone));
+    // Set 3-minute cooldown
+    const endTime = Date.now() + 180000; // 3 minutes from now
+    setPhoneCooldowns(prev => ({ ...prev, [phone]: { endTime, seconds: 180 } }));
   };
   
   const handlePhoneResendUpdate = (phone: string, count: number) => {
@@ -485,6 +489,24 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
   
   const handlePhoneAttemptUpdate = (phone: string, count: number) => {
     setPhoneAttemptCounts(prev => ({ ...prev, [phone]: count }));
+  };
+  
+  const handlePhoneCooldownUpdate = (phone: string, seconds: number) => {
+    if (seconds <= 0) {
+      setPhoneCooldowns(prev => {
+        const newCooldowns = { ...prev };
+        delete newCooldowns[phone];
+        return newCooldowns;
+      });
+    } else {
+      setPhoneCooldowns(prev => ({ 
+        ...prev, 
+        [phone]: { 
+          endTime: prev[phone]?.endTime || Date.now() + seconds * 1000, 
+          seconds 
+        }
+      }));
+    }
   };
 
   // Form submission
@@ -782,8 +804,10 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
               onOtpSent={handlePhoneOtpSent}
               initialResendCount={phoneResendCounts[form.watch('phone') || ''] || 0}
               initialAttemptCount={phoneAttemptCounts[form.watch('phone') || ''] || 0}
+              initialCooldown={phoneCooldowns[form.watch('phone') || '']}
               onResendUpdate={handlePhoneResendUpdate}
               onAttemptUpdate={handlePhoneAttemptUpdate}
+              onCooldownUpdate={handlePhoneCooldownUpdate}
             />
           </div>
 

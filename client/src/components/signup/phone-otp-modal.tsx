@@ -14,8 +14,10 @@ interface PhoneOtpModalProps {
   onOtpSent?: (phone: string) => void;
   initialResendCount?: number;
   initialAttemptCount?: number;
+  initialCooldown?: { endTime: number, seconds: number };
   onResendUpdate?: (phone: string, count: number) => void;
   onAttemptUpdate?: (phone: string, count: number) => void;
+  onCooldownUpdate?: (phone: string, seconds: number) => void;
 }
 
 export function PhoneOtpModal({ 
@@ -28,14 +30,21 @@ export function PhoneOtpModal({
   onOtpSent,
   initialResendCount = 0,
   initialAttemptCount = 0,
+  initialCooldown,
   onResendUpdate,
-  onAttemptUpdate
+  onAttemptUpdate,
+  onCooldownUpdate
 }: PhoneOtpModalProps) {
   const [otp, setOtp] = useState('');
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [resendCount, setResendCount] = useState(initialResendCount);
-  const [cooldownTime, setCooldownTime] = useState(0);
+  const [cooldownTime, setCooldownTime] = useState(() => {
+    if (initialCooldown && initialCooldown.endTime > Date.now()) {
+      return Math.ceil((initialCooldown.endTime - Date.now()) / 1000);
+    }
+    return 0;
+  });
   const [wrongAttempts, setWrongAttempts] = useState(initialAttemptCount);
   const [isBlocked, setIsBlocked] = useState(false);
   const { toast } = useToast();
@@ -46,17 +55,19 @@ export function PhoneOtpModal({
     if (cooldownTime > 0) {
       interval = setInterval(() => {
         setCooldownTime(prev => {
-          if (prev <= 1) {
-            return 0;
+          const newTime = prev - 1;
+          // Update parent with new cooldown time
+          if (onCooldownUpdate) {
+            onCooldownUpdate(phone, newTime);
           }
-          return prev - 1;
+          return newTime > 0 ? newTime : 0;
         });
       }, 1000);
     }
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [cooldownTime]);
+  }, [cooldownTime, phone, onCooldownUpdate]);
 
   // Format cooldown time as MM:SS
   const formatCooldown = (seconds: number) => {
@@ -73,6 +84,16 @@ export function PhoneOtpModal({
   }, [open, autoSendOtp]);
 
   const handleSendOtp = async () => {
+    // Check if still in cooldown
+    if (cooldownTime > 0) {
+      toast({
+        title: "Please wait",
+        description: `Wait ${formatCooldown(cooldownTime)} before requesting another OTP`,
+        variant: "destructive",
+      });
+      return;
+    }
+    
     try {
       const response = await fetch('/api/send-otp', {
         method: 'POST',
@@ -136,6 +157,11 @@ export function PhoneOtpModal({
         onResendUpdate(phone, newCount);
       }
       
+      // Update parent with cooldown
+      if (onCooldownUpdate) {
+        onCooldownUpdate(phone, 180);
+      }
+      
       toast({
         title: "OTP sent",
         description: `Verification code sent to ${countryCode} ${phone}`,
@@ -151,7 +177,22 @@ export function PhoneOtpModal({
   };
 
   const handleResendOtp = async () => {
-    if (cooldownTime > 0 || resendCount >= 3) return;
+    if (cooldownTime > 0) {
+      toast({
+        title: "Please wait",
+        description: `Wait ${formatCooldown(cooldownTime)} before resending`,
+        variant: "destructive",
+      });
+      return;
+    }
+    if (resendCount >= 3) {
+      toast({
+        title: "Resend limit reached",
+        description: "Maximum 3 resends allowed per phone number",
+        variant: "destructive",
+      });
+      return;
+    }
     await handleSendOtp();
   };
 
@@ -247,10 +288,17 @@ export function PhoneOtpModal({
     setOtp('');
     setSessionId(null);
     setResendCount(initialResendCount);
-    setCooldownTime(0);
     setWrongAttempts(initialAttemptCount);
     setIsBlocked(false);
-  }, [phone, initialResendCount, initialAttemptCount]);
+    
+    // Set cooldown from parent if active
+    if (initialCooldown && initialCooldown.endTime > Date.now()) {
+      const remainingSeconds = Math.ceil((initialCooldown.endTime - Date.now()) / 1000);
+      setCooldownTime(remainingSeconds);
+    } else {
+      setCooldownTime(0);
+    }
+  }, [phone, initialResendCount, initialAttemptCount, initialCooldown]);
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
