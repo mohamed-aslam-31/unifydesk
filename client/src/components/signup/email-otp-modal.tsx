@@ -356,7 +356,7 @@ export function EmailOtpModal({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="w-[calc(100vw-2rem)] max-w-sm mx-4 sm:max-w-md">
+      <DialogContent className="w-[90vw] max-w-sm sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="text-center text-lg sm:text-xl font-semibold">
             Verify Email Address
