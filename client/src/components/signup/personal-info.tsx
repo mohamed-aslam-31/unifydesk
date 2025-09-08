@@ -744,7 +744,7 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
                   <p className="text-xs text-red-600">Email is already registered</p>
                 )}
                 {emailStatus === "invalid" && (
-                  <p className="text-xs text-red-600">invalid Email Address</p>
+                  <p className="text-xs text-red-600">Invalid Email Address</p>
                 )}
                 <FormMessage />
               </FormItem>
