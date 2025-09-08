@@ -8,11 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { Loader2, Check, X, CalendarIcon } from "lucide-react";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { format, parseISO } from "date-fns";
-import { cn } from "@/lib/utils";
+import { Loader2, Check, X } from "lucide-react";
 import { signupSchema } from "@shared/schema";
 import { OTPInput } from "./otp-input";
 import { TermsModal } from "./terms-modal";
@@ -822,46 +818,91 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
               <FormField
                 control={form.control}
                 name="dateOfBirth"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Date of Birth *</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant={"outline"}
-                            className={cn(
-                              "w-full pl-3 text-left font-normal",
-                              !field.value && "text-muted-foreground"
-                            )}
-                          >
-                            {field.value ? (
-                              format(parseISO(field.value), "PPP")
-                            ) : (
-                              <span>Pick a date</span>
-                            )}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={field.value ? parseISO(field.value) : undefined}
-                          onSelect={(date) => field.onChange(date?.toISOString().split('T')[0])}
-                          disabled={(date) =>
-                            date > new Date() || date < new Date("1900-01-01")
-                          }
-                          initialFocus
-                          captionLayout="dropdown-buttons"
-                          fromYear={1924}
-                          toYear={2006}
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    <FormMessage />
-                  </FormItem>
-                )}
+                render={({ field }) => {
+                  const currentValue = field.value || "";
+                  const [year, month, day] = currentValue.split("-");
+                  
+                  const handleDateChange = (type: "day" | "month" | "year", value: string) => {
+                    const currentYear = year || "";
+                    const currentMonth = month || "";
+                    const currentDay = day || "";
+                    
+                    let newYear = currentYear;
+                    let newMonth = currentMonth;
+                    let newDay = currentDay;
+                    
+                    if (type === "year") newYear = value;
+                    if (type === "month") newMonth = value.padStart(2, "0");
+                    if (type === "day") newDay = value.padStart(2, "0");
+                    
+                    if (newYear && newMonth && newDay) {
+                      const isValidDate = !isNaN(Date.parse(`${newYear}-${newMonth}-${newDay}`));
+                      if (isValidDate) {
+                        field.onChange(`${newYear}-${newMonth}-${newDay}`);
+                      }
+                    }
+                  };
+                  
+                  return (
+                    <FormItem>
+                      <FormLabel>Date of Birth *</FormLabel>
+                      <div className="grid grid-cols-3 gap-2">
+                        <div>
+                          <Input
+                            type="number"
+                            placeholder="DD"
+                            min="1"
+                            max="31"
+                            value={day || ""}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              if (val === "" || (parseInt(val) >= 1 && parseInt(val) <= 31)) {
+                                handleDateChange("day", val);
+                              }
+                            }}
+                            className="text-center"
+                          />
+                          <p className="text-xs text-muted-foreground text-center mt-1">Day</p>
+                        </div>
+                        <div>
+                          <Input
+                            type="number"
+                            placeholder="MM"
+                            min="1"
+                            max="12"
+                            value={month || ""}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              if (val === "" || (parseInt(val) >= 1 && parseInt(val) <= 12)) {
+                                handleDateChange("month", val);
+                              }
+                            }}
+                            className="text-center"
+                          />
+                          <p className="text-xs text-muted-foreground text-center mt-1">Month</p>
+                        </div>
+                        <div>
+                          <Input
+                            type="number"
+                            placeholder="YYYY"
+                            min="1924"
+                            max="2006"
+                            value={year || ""}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              if (val === "" || (parseInt(val) >= 1924 && parseInt(val) <= 2006)) {
+                                handleDateChange("year", val);
+                              }
+                            }}
+                            className="text-center"
+                          />
+                          <p className="text-xs text-muted-foreground text-center mt-1">Year</p>
+                        </div>
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  );
+                }}
               />
             </div>
           </div>
