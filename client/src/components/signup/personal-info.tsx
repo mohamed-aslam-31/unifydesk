@@ -65,6 +65,7 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
   const [states, setStates] = useState<any[]>([]);
   const [cities, setCities] = useState<any[]>([]);
   const [captchaSessionId, setCaptchaSessionId] = useState<string | null>(null);
+  const [captchaAnswer, setCaptchaAnswer] = useState<string | null>(null);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -723,7 +724,7 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
       const signupData: SignupData = {
         ...data,
         lastName: data.lastName || "",
-        captchaAnswer: data.captchaAnswer || "",
+        captchaAnswer: captchaAnswer || "",
         captchaSessionId: captchaSessionId,
       };
 
@@ -1248,7 +1249,10 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
           {/* CAPTCHA */}
           <div className="space-y-2 sm:space-y-3">
             <h3 className="font-semibold text-slate-900 dark:text-white text-sm sm:text-base md:text-lg px-2">Security Verification</h3>
-            <VisualCaptcha onVerified={setCaptchaSessionId} />
+            <VisualCaptcha onVerified={(sessionId, answer) => {
+              setCaptchaSessionId(sessionId);
+              setCaptchaAnswer(answer);
+            }} />
           </div>
 
           {/* Terms and Conditions */}
