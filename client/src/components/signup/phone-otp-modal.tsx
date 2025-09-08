@@ -362,20 +362,20 @@ export function PhoneOtpModal({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="w-[calc(100vw-2rem)] max-w-sm mx-4 sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-center text-xl font-semibold">
+          <DialogTitle className="text-center text-lg sm:text-xl font-semibold">
             Verify Phone Number
           </DialogTitle>
         </DialogHeader>
         
-        <div className="space-y-6 py-4">
+        <div className="space-y-4 sm:space-y-6 py-3 sm:py-4">
           {/* Phone number display */}
-          <div className="text-center space-y-2">
-            <p className="text-sm text-slate-600 dark:text-slate-400">
+          <div className="text-center space-y-1 sm:space-y-2">
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
               Enter the 6-digit code sent to
             </p>
-            <p className="font-medium text-slate-900 dark:text-slate-100">
+            <p className="text-sm sm:text-base font-medium text-slate-900 dark:text-slate-100 break-all">
               {countryCode} {phone}
             </p>
           </div>
@@ -395,12 +395,12 @@ export function PhoneOtpModal({
               }}
               disabled={isSubmitting || isBlocked || isResending}
             >
-              <InputOTPGroup className="gap-2">
+              <InputOTPGroup className="gap-1 sm:gap-2">
                 {[0, 1, 2, 3, 4, 5].map((index) => (
                   <InputOTPSlot 
                     key={index}
                     index={index} 
-                    className="w-12 h-12 text-lg border-2 rounded-lg"
+                    className="w-8 h-8 sm:w-12 sm:h-12 text-sm sm:text-lg border-2 rounded-lg"
                   />
                 ))}
               </InputOTPGroup>
@@ -412,14 +412,14 @@ export function PhoneOtpModal({
           <Button
             onClick={handleSubmitOtp}
             disabled={otp.length !== 6 || isSubmitting || isBlocked || isResending}
-            className="w-full h-12 text-base font-medium"
+            className="w-full h-10 sm:h-12 text-sm sm:text-base font-medium"
             size="lg"
           >
             {isSubmitting ? "Verifying..." : "Submit"}
           </Button>
 
           {/* Resend Section */}
-          <div className="text-center space-y-2">
+          <div className="text-center space-y-1 sm:space-y-2">
             {cooldownTime > 0 ? (
               <p className="text-sm text-slate-600 dark:text-slate-400">
                 Resend OTP in {formatCooldown(cooldownTime)}
