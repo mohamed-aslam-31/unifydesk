@@ -135,7 +135,7 @@ export function VisualCaptcha({ onVerified, onError, className, hasError }: Visu
         setError("");
         onVerified(sessionId, userInput);
       } else {
-        setError("Incorrect CAPTCHA. Please try again.");
+        setError("wrong");
         setVerified(false);
         if (onError) onError("Incorrect CAPTCHA");
         await generateCaptcha(); // Generate new CAPTCHA
