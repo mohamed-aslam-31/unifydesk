@@ -1053,17 +1053,9 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
                           type={showConfirmPassword ? "text" : "password"}
                           placeholder="Re-enter your password"
                           {...field}
-                          className={`pr-16 ${
-                            isMatching 
-                              ? "border-green-500 focus:border-green-500 focus:ring-green-500" 
-                              : isNotMatching 
-                              ? "border-red-500 focus:border-red-500 focus:ring-red-500" 
-                              : ""
-                          }`}
+                          className="pr-10"
                         />
-                        <div className="absolute inset-y-0 right-0 pr-3 flex items-center space-x-1">
-                          {isMatching && <Check className="h-4 w-4 text-green-500" />}
-                          {isNotMatching && <X className="h-4 w-4 text-red-500" />}
+                        <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
                           <button
                             type="button"
                             onClick={() => setShowConfirmPassword(!showConfirmPassword)}
@@ -1078,7 +1070,10 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
                       </div>
                     </FormControl>
                     {isMatching && (
-                      <p className="text-xs text-green-600">Passwords match</p>
+                      <p className="text-xs text-green-600">Password match</p>
+                    )}
+                    {isNotMatching && (
+                      <p className="text-xs text-red-600">Doesn't match</p>
                     )}
                     <FormMessage />
                   </FormItem>
