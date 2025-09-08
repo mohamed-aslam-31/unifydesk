@@ -1022,7 +1022,7 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
               phone={form.watch('phone') || ''}
               countryCode="+91"
               onVerified={handlePhoneVerified}
-              autoSendOtp={false}
+              autoSendOtp={true}
               onOtpSent={handlePhoneOtpSent}
               initialResendCount={phoneResendCounts[form.watch('phone') || ''] || 0}
               initialAttemptCount={phoneAttemptCounts[form.watch('phone') || ''] || 0}
