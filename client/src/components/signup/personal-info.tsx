@@ -26,7 +26,7 @@ interface PersonalInfoProps {
   onSuccess: (sessionToken: string, user: any) => void;
 }
 
-export default function PersonalInfo({ onSuccess }: PersonalInfoProps) {
+export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
   const { toast } = useToast();
   
   // Form states
