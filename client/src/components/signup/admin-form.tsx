@@ -10,10 +10,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Crown, Upload, Clock, Loader2, Crop } from "lucide-react";
+import { Crown, Upload, Clock, Loader2, Crop as CropIcon } from "lucide-react";
 import { submitRoleData } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
-import ReactCrop, { type Crop, centerCrop, makeAspectCrop } from 'react-image-crop';
+import ReactCrop, { Crop, centerCrop, makeAspectCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 
 interface AdminFormProps {
@@ -44,10 +44,10 @@ export function AdminForm({ sessionToken, onSuccess, onBack }: AdminFormProps) {
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      if (file.size > 1024 * 1024) { // 1MB limit
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit
         toast({
           title: "File too large",
-          description: "Please select an image smaller than 1MB",
+          description: "Please select an image smaller than 5MB",
           variant: "destructive",
         });
         return;
@@ -56,11 +56,83 @@ export function AdminForm({ sessionToken, onSuccess, onBack }: AdminFormProps) {
       const reader = new FileReader();
       reader.onload = (e) => {
         const result = e.target?.result as string;
-        setProfileImage(result);
-        form.setValue("profilePicture", result);
+        setImageToCrop(result);
+        setShowCropModal(true);
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  const onImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const { width, height } = e.currentTarget;
+    const crop = centerCrop(
+      makeAspectCrop(
+        {
+          unit: '%',
+          width: 90,
+        },
+        1,
+        width,
+        height
+      ),
+      width,
+      height,
+    );
+    setCrop(crop);
+  };
+
+  const getCroppedImg = async () => {
+    if (!imageRef.current || !completedCrop) {
+      return null;
+    }
+
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      return null;
+    }
+
+    const image = imageRef.current;
+    const scaleX = image.naturalWidth / image.width;
+    const scaleY = image.naturalHeight / image.height;
+
+    canvas.width = completedCrop.width * scaleX;
+    canvas.height = completedCrop.height * scaleY;
+
+    ctx.drawImage(
+      image,
+      completedCrop.x * scaleX,
+      completedCrop.y * scaleY,
+      completedCrop.width * scaleX,
+      completedCrop.height * scaleY,
+      0,
+      0,
+      canvas.width,
+      canvas.height
+    );
+
+    return canvas.toDataURL('image/jpeg', 0.8);
+  };
+
+  const handleCropConfirm = async () => {
+    const croppedImage = await getCroppedImg();
+    if (croppedImage) {
+      setProfileImage(croppedImage);
+      form.setValue("profilePicture", croppedImage);
+      setShowCropModal(false);
+      setImageToCrop(null);
+      toast({
+        title: "Image cropped successfully!",
+        description: "Profile picture has been set.",
+      });
+    }
+  };
+
+  const handleCropCancel = () => {
+    setShowCropModal(false);
+    setImageToCrop(null);
+    setCrop(undefined);
+    setCompletedCrop(undefined);
   };
 
   const onSubmit = async (data: z.infer<typeof adminRoleSchema>) => {
@@ -101,39 +173,59 @@ export function AdminForm({ sessionToken, onSuccess, onBack }: AdminFormProps) {
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             {/* Profile Picture */}
-            <div>
-              <Label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                Profile Picture
-              </Label>
-              <div className="flex items-center space-x-4">
-                <div className="w-20 h-20 bg-slate-200 dark:bg-slate-700 rounded-full flex items-center justify-center overflow-hidden">
-                  {profileImage ? (
-                    <img src={profileImage} alt="Profile" className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-8 h-8 bg-slate-400 rounded-full flex items-center justify-center">
-                      <span className="text-white text-xs">👤</span>
+            <FormField
+              control={form.control}
+              name="profilePicture"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                    Profile Picture *
+                  </FormLabel>
+                  <FormControl>
+                    <div className="flex items-center space-x-4">
+                      <div className="w-20 h-20 bg-slate-200 dark:bg-slate-700 rounded-full flex items-center justify-center overflow-hidden border-2 border-dashed border-slate-300 dark:border-slate-600">
+                        {profileImage ? (
+                          <img src={profileImage} alt="Profile" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-8 h-8 bg-slate-400 rounded-full flex items-center justify-center">
+                            <span className="text-white text-xs">👤</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <Input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageUpload}
+                          className="hidden"
+                          id="adminProfilePic"
+                        />
+                        <Label
+                          htmlFor="adminProfilePic"
+                          className="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 cursor-pointer transition-colors"
+                        >
+                          <Upload className="w-4 h-4 mr-2" />
+                          {profileImage ? 'Change Photo' : 'Upload Photo'}
+                        </Label>
+                        <p className="text-xs text-slate-500 mt-2">
+                          Max 5MB • JPG, PNG, GIF • Will be cropped to square
+                        </p>
+                        {profileImage && (
+                          <button
+                            type="button"
+                            onClick={() => setProfileImage(null)}
+                            className="text-xs text-red-500 hover:text-red-700 mt-1 block"
+                          >
+                            Remove image
+                          </button>
+                        )}
+                      </div>
                     </div>
-                  )}
-                </div>
-                <div>
-                  <Input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                    className="hidden"
-                    id="adminProfilePic"
-                  />
-                  <Label
-                    htmlFor="adminProfilePic"
-                    className="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 cursor-pointer transition-colors"
-                  >
-                    <Upload className="w-4 h-4 mr-2" />
-                    Upload Photo
-                  </Label>
-                  <p className="text-xs text-slate-500 mt-1">Max 1MB, will be cropped to square</p>
-                </div>
-              </div>
-            </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             {/* Handler Type */}
             <FormField
@@ -219,6 +311,64 @@ export function AdminForm({ sessionToken, onSuccess, onBack }: AdminFormProps) {
           </div>
         </div>
       </div>
+
+      {/* Image Crop Modal */}
+      <Dialog open={showCropModal} onOpenChange={setShowCropModal}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CropIcon className="w-5 h-5" />
+              Crop Profile Picture
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {imageToCrop && (
+              <div className="max-h-96 overflow-auto flex justify-center">
+                <ReactCrop
+                  crop={crop}
+                  onChange={(_, percentCrop) => setCrop(percentCrop)}
+                  onComplete={(c) => setCompletedCrop(c)}
+                  aspect={1}
+                  minWidth={100}
+                  minHeight={100}
+                  circularCrop
+                >
+                  <img
+                    ref={imageRef}
+                    alt="Crop me"
+                    src={imageToCrop}
+                    style={{ maxHeight: '400px', width: 'auto' }}
+                    onLoad={onImageLoad}
+                  />
+                </ReactCrop>
+              </div>
+            )}
+            <div className="flex justify-between items-center pt-4 border-t">
+              <p className="text-sm text-slate-600 dark:text-slate-400">
+                Drag to reposition and resize to crop your image to a perfect square
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleCropCancel}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  onClick={handleCropConfirm}
+                  disabled={!completedCrop}
+                  className="bg-purple-600 hover:bg-purple-700"
+                >
+                  <CropIcon className="w-4 h-4 mr-2" />
+                  Apply Crop
+                </Button>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
