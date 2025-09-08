@@ -170,7 +170,12 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
       setEmailVerified(false);
       setShowEmailOtpModal(false);
     }
-  }, [form.watch("email"), emailVerified, lastVerifiedEmail]);
+    // Check if this email was previously verified
+    if (verifiedEmailAddresses.has(email) && email) {
+      setEmailVerified(true);
+      setLastVerifiedEmail(email);
+    }
+  }, [form.watch("email"), emailVerified, lastVerifiedEmail, verifiedEmailAddresses]);
 
   useEffect(() => {
     const phone = form.watch("phone");
@@ -471,11 +476,12 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
     if (!emailValue || emailStatus !== 'available') return;
     
     // Check if this email was already verified
-    if (lastVerifiedEmail === emailValue) {
+    if (verifiedEmailAddresses.has(emailValue)) {
       setEmailVerified(true);
+      setLastVerifiedEmail(emailValue);
       toast({
         title: "Email already verified",
-        description: "This email address is already verified!",
+        description: "This email address has been previously verified.",
       });
       return;
     }
@@ -935,7 +941,8 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
                         {emailStatus === "checking" && <Loader2 className="h-4 w-4 animate-spin text-slate-400" />}
                         {emailStatus === "taken" && <X className="h-4 w-4 text-red-500" />}
                         {emailStatus === "invalid" && <X className="h-4 w-4 text-red-500" />}
-                        {!emailVerified && emailStatus !== "checking" && emailStatus === "available" && (
+                        {/* Show verify button if email is available and not verified, or if it's a different email than verified */}
+                        {!emailVerified && emailStatus === "available" && field.value !== lastVerifiedEmail && (
                           <Button
                             type="button"
                             size="sm"
@@ -946,7 +953,10 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
                             Verify
                           </Button>
                         )}
-                        {emailVerified && <Check className="h-4 w-4 text-blue-500" />}
+                        {/* Show blue tick if email is verified or matches last verified email */}
+                        {(emailVerified || (field.value === lastVerifiedEmail && lastVerifiedEmail)) && emailStatus === "available" && (
+                          <Check className="h-4 w-4 text-blue-500" />
+                        )}
                       </div>
                     </div>
                   </FormControl>
