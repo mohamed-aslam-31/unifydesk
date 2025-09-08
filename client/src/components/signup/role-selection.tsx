@@ -88,7 +88,7 @@ export function RoleSelection({ user, onRoleSelect }: RoleSelectionProps) {
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="text-center mb-12">
         <h1 className="text-4xl font-bold text-slate-900 dark:text-white mb-4">
-          Hi {user.firstName}! Choose your account type.
+          Hi {user?.firstName || 'User'}! Choose your account type.
         </h1>
         <p className="text-xl text-slate-600 dark:text-slate-400">
           Select the role that best describes how you'll use UnifyDesk

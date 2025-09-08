@@ -21,6 +21,11 @@ export function AuthGuard({
 
     // Handle protected routes - require authentication
     if (requireAuth && !user) {
+      // If someone tries to access choose-role directly, redirect to home
+      if (currentLocation === '/choose-role') {
+        setLocation('/');
+        return;
+      }
       setLocation(redirectTo);
       return;
     }
