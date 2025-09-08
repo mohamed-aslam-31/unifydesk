@@ -444,7 +444,7 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
       return;
     }
     
-    // Check if this phone number is blocked
+    // Check if this phone number is blocked locally
     if (phoneBlocked.has(phoneValue)) {
       toast({
         title: "Phone Number Blocked",
@@ -454,7 +454,56 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
       return;
     }
     
-    setShowPhoneOtpModal(true);
+    // If OTP was already sent for this number, just open modal
+    if (phoneOtpSentNumbers.has(phoneValue)) {
+      setShowPhoneOtpModal(true);
+      return;
+    }
+    
+    // Try to send OTP first - only open modal if successful
+    try {
+      const response = await fetch('/api/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          identifier: `+91${phoneValue}`,
+          type: 'phone'
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        if (response.status === 429) {
+          // Mark as blocked locally
+          setPhoneBlocked(prev => new Set(prev).add(phoneValue));
+          toast({
+            title: "Phone Number Blocked",
+            description: "Your number was blocked due to too many failed OTP attempts. Please try again after 5 hours.",
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        throw new Error(data.message || 'Failed to send OTP');
+      }
+      
+      // Success - mark as sent and open modal without auto-send
+      handlePhoneOtpSent(phoneValue);
+      toast({
+        title: "OTP sent",
+        description: `Verification code sent to +91 ${phoneValue}`,
+      });
+      setShowPhoneOtpModal(true);
+      
+    } catch (error: any) {
+      toast({
+        title: "Failed to send OTP",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
   };
 
   const handlePhoneVerified = () => {
@@ -821,7 +870,7 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
               phone={form.watch('phone') || ''}
               countryCode="+91"
               onVerified={handlePhoneVerified}
-              autoSendOtp={!phoneOtpSentNumbers.has(form.watch('phone') || '')}
+              autoSendOtp={false}
               onOtpSent={handlePhoneOtpSent}
               initialResendCount={phoneResendCounts[form.watch('phone') || ''] || 0}
               initialAttemptCount={phoneAttemptCounts[form.watch('phone') || ''] || 0}
