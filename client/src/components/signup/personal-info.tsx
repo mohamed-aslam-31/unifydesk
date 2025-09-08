@@ -927,7 +927,6 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
                       />
                       <div className="absolute inset-y-0 right-0 pr-3 flex items-center space-x-2">
                         {emailStatus === "checking" && <Loader2 className="h-4 w-4 animate-spin text-slate-400" />}
-                        {emailStatus === "available" && !emailVerified && <Check className="h-4 w-4 text-green-500" />}
                         {emailStatus === "taken" && <X className="h-4 w-4 text-red-500" />}
                         {emailStatus === "invalid" && <X className="h-4 w-4 text-red-500" />}
                         {!emailVerified && emailStatus !== "checking" && emailStatus === "available" && (
@@ -941,7 +940,7 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
                             Verify
                           </Button>
                         )}
-                        {emailVerified && <Check className="h-4 w-4 text-green-500" />}
+                        {emailVerified && <Check className="h-4 w-4 text-blue-500" />}
                       </div>
                     </div>
                   </FormControl>
