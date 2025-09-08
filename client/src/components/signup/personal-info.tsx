@@ -1059,7 +1059,7 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
               onClose={handleEmailModalClose}
               email={form.watch('email') || ''}
               onVerified={handleEmailVerified}
-              autoSendOtp={false}
+              autoSendOtp={true}
               onOtpSent={handleEmailOtpSent}
               initialResendCount={emailResendCounts[form.watch('email') || ''] || 0}
               initialAttemptCount={emailAttemptCounts[form.watch('email') || ''] || 0}
