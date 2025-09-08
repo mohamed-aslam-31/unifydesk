@@ -10,7 +10,7 @@ export function Header() {
   };
 
   return (
-    <header className="backdrop-blur-md bg-white/80 dark:bg-slate-800/80 border border-white/20 dark:border-slate-700/50 shadow-sm sticky top-0 z-50 transition-all duration-300 pt-[10px] px-[10px] rounded-[5px]">
+    <header className="backdrop-blur-md bg-white/80 dark:bg-slate-800/80 border border-white/20 dark:border-slate-700/50 shadow-sm sticky top-0 z-50 transition-all duration-300 mt-[10px] mx-[10px] rounded-[5px]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
