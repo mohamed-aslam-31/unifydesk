@@ -170,12 +170,7 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
       setEmailVerified(false);
       setShowEmailOtpModal(false);
     }
-    // Check if this email was previously verified
-    if (verifiedEmailAddresses.has(email) && email) {
-      setEmailVerified(true);
-      setLastVerifiedEmail(email);
-    }
-  }, [form.watch("email"), emailVerified, lastVerifiedEmail, verifiedEmailAddresses]);
+  }, [form.watch("email"), emailVerified, lastVerifiedEmail]);
 
   useEffect(() => {
     const phone = form.watch("phone");
@@ -183,10 +178,6 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
       if (phoneVerified) {
         setPhoneVerified(false);
         setShowPhoneOtpModal(false);
-      }
-      // Check if this number was previously verified
-      if (phone === lastVerifiedPhone && lastVerifiedPhone) {
-        setPhoneVerified(true);
       }
     }
   }, [form.watch("phone"), phoneVerified, lastVerifiedPhone]);
@@ -475,17 +466,6 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
     const emailValue = form.getValues('email');
     if (!emailValue || emailStatus !== 'available') return;
     
-    // Check if this email was already verified
-    if (verifiedEmailAddresses.has(emailValue)) {
-      setEmailVerified(true);
-      setLastVerifiedEmail(emailValue);
-      toast({
-        title: "Email already verified",
-        description: "This email address has been previously verified.",
-      });
-      return;
-    }
-    
     // Check if this email is blocked locally
     if (emailBlocked.has(emailValue)) {
       toast({
@@ -567,16 +547,6 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
   const handleSendPhoneOTP = async () => {
     const phoneValue = form.getValues('phone');
     if (!phoneValue || phoneStatus !== 'valid') return;
-    
-    // Check if this phone number was already verified
-    if (lastVerifiedPhone === phoneValue) {
-      setPhoneVerified(true);
-      toast({
-        title: "Phone already verified",
-        description: "This phone number is already verified!",
-      });
-      return;
-    }
     
     // Check if this phone number is blocked locally
     if (phoneBlocked.has(phoneValue)) {
