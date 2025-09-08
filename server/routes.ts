@@ -476,6 +476,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Username already taken" });
       }
 
+      const existingUserByPhone = await storage.getUserByPhone(validatedData.phone, validatedData.countryCode);
+      if (existingUserByPhone) {
+        return res.status(400).json({ message: "Phone number already registered" });
+      }
+
       // Create user with encrypted password
       const user = await storage.createUser({
         firstName: validatedData.firstName,
