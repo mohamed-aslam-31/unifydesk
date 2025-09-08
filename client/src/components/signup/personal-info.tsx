@@ -129,7 +129,7 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
     // Trigger form validation for live error display
     setTimeout(() => form.trigger("username"), 100);
     
-    if (username.length >= 3) {
+    if (username.length >= 8) {
       setUsernameStatus("checking");
       try {
         const result = await validateField("username", username);

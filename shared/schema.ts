@@ -148,7 +148,7 @@ export const signupSchema = z.object({
     .or(z.literal("")),
   username: z.string()
     .min(1, "Enter your Username")
-    .min(3, "Username must be at least 3 characters")
+    .min(8, "Username must be at least 8 characters")
     .max(15, "Username must not exceed 15 characters")
     .regex(/^[a-zA-Z0-9_!@#$%^&*(),.?":{}|<>-]+$/, "Username cannot contain spaces"),
   email: z.string().min(1, "Enter Your Email").email("Enter a valid email address"),
