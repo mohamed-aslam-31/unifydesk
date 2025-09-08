@@ -12,15 +12,31 @@ interface PhoneOtpModalProps {
   onVerified: () => void;
   autoSendOtp?: boolean;
   onOtpSent?: (phone: string) => void;
+  initialResendCount?: number;
+  initialAttemptCount?: number;
+  onResendUpdate?: (phone: string, count: number) => void;
+  onAttemptUpdate?: (phone: string, count: number) => void;
 }
 
-export function PhoneOtpModal({ open, onClose, phone, countryCode, onVerified, autoSendOtp = true, onOtpSent }: PhoneOtpModalProps) {
+export function PhoneOtpModal({ 
+  open, 
+  onClose, 
+  phone, 
+  countryCode, 
+  onVerified, 
+  autoSendOtp = true, 
+  onOtpSent,
+  initialResendCount = 0,
+  initialAttemptCount = 0,
+  onResendUpdate,
+  onAttemptUpdate
+}: PhoneOtpModalProps) {
   const [otp, setOtp] = useState('');
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [resendCount, setResendCount] = useState(0);
+  const [resendCount, setResendCount] = useState(initialResendCount);
   const [cooldownTime, setCooldownTime] = useState(0);
-  const [wrongAttempts, setWrongAttempts] = useState(0);
+  const [wrongAttempts, setWrongAttempts] = useState(initialAttemptCount);
   const [isBlocked, setIsBlocked] = useState(false);
   const { toast } = useToast();
 
@@ -106,12 +122,18 @@ export function PhoneOtpModal({ open, onClose, phone, countryCode, onVerified, a
       }
 
       setSessionId(data.sessionId);
-      setResendCount(prev => prev + 1);
+      const newCount = resendCount + 1;
+      setResendCount(newCount);
       setCooldownTime(180); // 3 minutes
       
       // Notify parent that OTP was sent for this phone number
       if (onOtpSent) {
         onOtpSent(phone);
+      }
+      
+      // Update parent with new resend count
+      if (onResendUpdate) {
+        onResendUpdate(phone, newCount);
       }
       
       toast({
@@ -157,6 +179,11 @@ export function PhoneOtpModal({ open, onClose, phone, countryCode, onVerified, a
         const newAttempts = wrongAttempts + 1;
         setWrongAttempts(newAttempts);
         
+        // Update parent with new attempt count
+        if (onAttemptUpdate) {
+          onAttemptUpdate(phone, newAttempts);
+        }
+        
         if (response.status === 429) {
           setIsBlocked(true);
           toast({
@@ -181,7 +208,7 @@ export function PhoneOtpModal({ open, onClose, phone, countryCode, onVerified, a
 
         toast({
           title: "Invalid OTP",
-          description: `${data.message}. ${5 - newAttempts} attempts remaining.`,
+          description: `${5 - newAttempts} attempts remaining.`,
           variant: "destructive",
         });
         
@@ -208,23 +235,22 @@ export function PhoneOtpModal({ open, onClose, phone, countryCode, onVerified, a
     }
   };
 
-  // Only reset OTP input when modal closes, keep other states
+  // Reset OTP input when modal closes or opens
   useEffect(() => {
     if (!open) {
       setOtp('');
-      // Don't reset other states to preserve attempt counts
     }
   }, [open]);
   
-  // Reset all states only when phone number changes
+  // Update counts from props when phone changes
   useEffect(() => {
     setOtp('');
     setSessionId(null);
-    setResendCount(0);
+    setResendCount(initialResendCount);
     setCooldownTime(0);
-    setWrongAttempts(0);
+    setWrongAttempts(initialAttemptCount);
     setIsBlocked(false);
-  }, [phone]);
+  }, [phone, initialResendCount, initialAttemptCount]);
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -251,7 +277,11 @@ export function PhoneOtpModal({ open, onClose, phone, countryCode, onVerified, a
             <InputOTP 
               maxLength={6} 
               value={otp}
-              onChange={setOtp}
+              onChange={(value) => {
+                // Only allow numbers
+                const numbersOnly = value.replace(/[^0-9]/g, '');
+                setOtp(numbersOnly);
+              }}
               disabled={isSubmitting || isBlocked}
             >
               <InputOTPGroup className="gap-2">
@@ -266,22 +296,6 @@ export function PhoneOtpModal({ open, onClose, phone, countryCode, onVerified, a
             </InputOTP>
           </div>
 
-          {/* Error display */}
-          {wrongAttempts > 0 && wrongAttempts < 5 && !isBlocked && (
-            <div className="text-center">
-              <p className="text-sm text-red-600">
-                {5 - wrongAttempts} attempts remaining
-              </p>
-            </div>
-          )}
-          
-          {isBlocked && (
-            <div className="text-center">
-              <p className="text-sm text-red-600">
-                Account blocked for 5 hours
-              </p>
-            </div>
-          )}
 
           {/* Submit Button */}
           <Button

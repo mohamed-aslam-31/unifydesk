@@ -43,6 +43,8 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
   const [emailVerified, setEmailVerified] = useState(false);
   const [phoneVerified, setPhoneVerified] = useState(false);
   const [phoneOtpSentNumbers, setPhoneOtpSentNumbers] = useState<Set<string>>(new Set());
+  const [phoneResendCounts, setPhoneResendCounts] = useState<Record<string, number>>({});
+  const [phoneAttemptCounts, setPhoneAttemptCounts] = useState<Record<string, number>>({});
   
   // Email OTP states
   const [emailOtpSendCount, setEmailOtpSendCount] = useState(0);
@@ -447,11 +449,21 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
     const phoneValue = form.getValues('phone');
     setPhoneVerified(true);
     setLastVerifiedPhone(phoneValue);
-    // Clear the phone from sent numbers since it's now verified
+    // Clear all tracking for this phone since it's verified
     setPhoneOtpSentNumbers(prev => {
       const newSet = new Set(prev);
       newSet.delete(phoneValue);
       return newSet;
+    });
+    setPhoneResendCounts(prev => {
+      const newCounts = { ...prev };
+      delete newCounts[phoneValue];
+      return newCounts;
+    });
+    setPhoneAttemptCounts(prev => {
+      const newCounts = { ...prev };
+      delete newCounts[phoneValue];
+      return newCounts;
     });
     toast({
       title: "Phone verified",
@@ -465,6 +477,14 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
   
   const handlePhoneOtpSent = (phone: string) => {
     setPhoneOtpSentNumbers(prev => new Set(prev).add(phone));
+  };
+  
+  const handlePhoneResendUpdate = (phone: string, count: number) => {
+    setPhoneResendCounts(prev => ({ ...prev, [phone]: count }));
+  };
+  
+  const handlePhoneAttemptUpdate = (phone: string, count: number) => {
+    setPhoneAttemptCounts(prev => ({ ...prev, [phone]: count }));
   };
 
   // Form submission
@@ -760,6 +780,10 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
               onVerified={handlePhoneVerified}
               autoSendOtp={!phoneOtpSentNumbers.has(form.watch('phone') || '')}
               onOtpSent={handlePhoneOtpSent}
+              initialResendCount={phoneResendCounts[form.watch('phone') || ''] || 0}
+              initialAttemptCount={phoneAttemptCounts[form.watch('phone') || ''] || 0}
+              onResendUpdate={handlePhoneResendUpdate}
+              onAttemptUpdate={handlePhoneAttemptUpdate}
             />
           </div>
 
