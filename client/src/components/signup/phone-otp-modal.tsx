@@ -11,9 +11,10 @@ interface PhoneOtpModalProps {
   countryCode: string;
   onVerified: () => void;
   autoSendOtp?: boolean;
+  onOtpSent?: (phone: string) => void;
 }
 
-export function PhoneOtpModal({ open, onClose, phone, countryCode, onVerified, autoSendOtp = true }: PhoneOtpModalProps) {
+export function PhoneOtpModal({ open, onClose, phone, countryCode, onVerified, autoSendOtp = true, onOtpSent }: PhoneOtpModalProps) {
   const [otp, setOtp] = useState('');
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -107,6 +108,11 @@ export function PhoneOtpModal({ open, onClose, phone, countryCode, onVerified, a
       setSessionId(data.sessionId);
       setResendCount(prev => prev + 1);
       setCooldownTime(180); // 3 minutes
+      
+      // Notify parent that OTP was sent for this phone number
+      if (onOtpSent) {
+        onOtpSent(phone);
+      }
       
       toast({
         title: "OTP sent",

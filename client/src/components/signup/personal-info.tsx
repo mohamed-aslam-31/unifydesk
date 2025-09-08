@@ -42,7 +42,7 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
   const [showPhoneOtpModal, setShowPhoneOtpModal] = useState(false);
   const [emailVerified, setEmailVerified] = useState(false);
   const [phoneVerified, setPhoneVerified] = useState(false);
-  const [currentOtpSession, setCurrentOtpSession] = useState<{ phone: string; sessionActive: boolean } | null>(null);
+  const [phoneOtpSentNumbers, setPhoneOtpSentNumbers] = useState<Set<string>>(new Set());
   
   // Email OTP states
   const [emailOtpSendCount, setEmailOtpSendCount] = useState(0);
@@ -324,7 +324,7 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
     setPhoneStatus("checking");
 
     try {
-      const isAvailable = await validateField("phone", value, "+91");
+      const isAvailable = await validateField("phone", `+91${value}`);
       if (isAvailable) {
         setPhoneStatus("valid");
       } else {
@@ -440,24 +440,19 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
       return;
     }
     
-    // Check if we have an active session for this phone number
-    const shouldAutoSend = !currentOtpSession || currentOtpSession.phone !== phoneValue;
-    
-    if (!shouldAutoSend) {
-      // Reopen modal without sending new OTP
-      setShowPhoneOtpModal(true);
-    } else {
-      // Open modal and auto-send OTP
-      setCurrentOtpSession({ phone: phoneValue, sessionActive: true });
-      setShowPhoneOtpModal(true);
-    }
+    setShowPhoneOtpModal(true);
   };
 
   const handlePhoneVerified = () => {
     const phoneValue = form.getValues('phone');
     setPhoneVerified(true);
     setLastVerifiedPhone(phoneValue);
-    setCurrentOtpSession(null); // Clear session after successful verification
+    // Clear the phone from sent numbers since it's now verified
+    setPhoneOtpSentNumbers(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(phoneValue);
+      return newSet;
+    });
     toast({
       title: "Phone verified",
       description: "Your phone number has been successfully verified!",
@@ -466,7 +461,10 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
   
   const handlePhoneModalClose = () => {
     setShowPhoneOtpModal(false);
-    // Keep session active even if modal is closed
+  };
+  
+  const handlePhoneOtpSent = (phone: string) => {
+    setPhoneOtpSentNumbers(prev => new Set(prev).add(phone));
   };
 
   // Form submission
@@ -760,7 +758,8 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
               phone={form.watch('phone') || ''}
               countryCode="+91"
               onVerified={handlePhoneVerified}
-              autoSendOtp={currentOtpSession?.phone === form.watch('phone') && currentOtpSession?.sessionActive}
+              autoSendOtp={!phoneOtpSentNumbers.has(form.watch('phone') || '')}
+              onOtpSent={handlePhoneOtpSent}
             />
           </div>
 
