@@ -94,9 +94,10 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
     },
   });
 
-  // Load countries on mount
+  // Load countries and Indian states on mount
   useEffect(() => {
     fetchCountries();
+    fetchIndianStates();
   }, []);
 
   // Load verified phone numbers from localStorage and reset their counts
@@ -179,9 +180,34 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
     }
   };
 
+  // Fetch Indian states on component mount
+  const fetchIndianStates = async () => {
+    try {
+      const response = await fetch("/api/locations/states", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ country: "India" }),
+      });
+      const data = await response.json();
+      if (!data.error) {
+        setStates(data.data.states);
+      }
+    } catch (error) {
+      console.error("Error fetching Indian states:", error);
+    }
+  };
+
   // Handle country change
   const handleCountryChange = async (country: string) => {
+    // Reset city selection when country changes
+    form.setValue("city", "");
+    setCities([]);
+    
     if (country === "India") {
+      // States are already loaded on mount, just reset state selection
+      form.setValue("state", "");
+    } else {
+      // For other countries, fetch their states if needed
       try {
         const response = await fetch("/api/locations/states", {
           method: "POST",
@@ -191,28 +217,37 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
         const data = await response.json();
         if (!data.error) {
           setStates(data.data.states);
-          setCities([]);
+        } else {
+          setStates([]);
         }
       } catch (error) {
         console.error("Error fetching states:", error);
+        setStates([]);
       }
     }
   };
 
   // Handle state change
   const handleStateChange = async (state: string) => {
+    const selectedCountry = form.getValues("country") || "India";
+    
     try {
       const response = await fetch("/api/locations/cities", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ country: "India", state }),
+        body: JSON.stringify({ country: selectedCountry, state }),
       });
       const data = await response.json();
       if (!data.error) {
         setCities(data.data);
+      } else {
+        setCities([]);
       }
+      // Reset city selection when state changes
+      form.setValue("city", "");
     } catch (error) {
       console.error("Error fetching cities:", error);
+      setCities([]);
     }
   };
 
