@@ -493,6 +493,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         address: validatedData.address || null,
         password: validatedData.password, // Will be hashed in storage
         profilePicture: undefined,
+        emailVerified: true, // User has verified email during signup
+        phoneVerified: true, // User has verified phone during signup
       });
 
       // Create session

@@ -71,7 +71,7 @@ export class PostgreSQLStorage implements IStorage {
 
     const userData: NewUser = {
       firstName: insertUser.firstName,
-      lastName: insertUser.lastName,
+      lastName: insertUser.lastName || null,
       username: insertUser.username,
       email: insertUser.email,
       phone: insertUser.phone,
@@ -82,12 +82,12 @@ export class PostgreSQLStorage implements IStorage {
       country: insertUser.country,
       state: insertUser.state,
       city: insertUser.city,
-      address: insertUser.address,
+      address: insertUser.address || null,
       password: hashedPassword,
 
-      role: insertUser.role,
-      emailVerified: false,
-      phoneVerified: false,
+      role: insertUser.role || null,
+      emailVerified: insertUser.emailVerified ?? false,
+      phoneVerified: insertUser.phoneVerified ?? false,
       roleStatus: "pending",
     };
 
@@ -98,6 +98,7 @@ export class PostgreSQLStorage implements IStorage {
   async updateUser(id: number, updates: Partial<SharedUser>): Promise<SharedUser | undefined> {
     const updateData: Partial<NewUser> = {
       ...updates,
+      lastName: updates.lastName || null,
       updatedAt: new Date(),
     };
 

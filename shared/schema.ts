@@ -106,6 +106,9 @@ export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+}).extend({
+  emailVerified: z.boolean().optional(),
+  phoneVerified: z.boolean().optional(),
 });
 
 export const insertSessionSchema = createInsertSchema(sessions).omit({
@@ -156,7 +159,7 @@ export const signupSchema = z.object({
     .min(8, "Username must be at least 8 characters")
     .max(15, "Username must not exceed 15 characters")
     .regex(/^[a-zA-Z0-9_!@#$%^&*(),.?":{}|<>-]+$/, "Username cannot contain spaces"),
-  email: z.string().min(1, "Enter Your Email").email("Enter a valid email address"),
+  email: z.string().min(1, "Enter your email").email("Enter a valid email address"),
   phone: z.string().min(1, "Enter your phone number").min(10, "Phone number must be at least 10 digits"),
   countryCode: z.string().min(1, "Country code is required"),
   isWhatsApp: z.boolean().default(false),
@@ -174,12 +177,12 @@ export const signupSchema = z.object({
   city: z.string().min(1, "City is required"),
   address: z.string().min(1, "Address is required"),
   password: z.string()
-    .min(1, "Enter the password")
+    .min(1, "Enter your password")
     .min(8, "Password must be at least 8 characters")
     .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
     .regex(/[0-9]/, "Password must contain at least one number")
     .regex(/[!@#$%^&*(),.?":{}|<>]/, "Password must contain at least one special character"),
-  confirmPassword: z.string().min(1, "Enter the confirm password"),
+  confirmPassword: z.string().min(1, "Confirm your password"),
   captchaAnswer: z.string().optional(),
   captchaSessionId: z.string().optional(),
   acceptTerms: z.boolean().refine(val => val === true, {
