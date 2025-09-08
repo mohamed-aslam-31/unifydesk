@@ -859,7 +859,7 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
                   />
                 </div>
                 {phoneStatus === "invalid" && (
-                  <p className="text-xs text-red-600">Enter the phone number properly</p>
+                  <p className="text-xs text-red-600">Invalid Phone Number</p>
                 )}
                 {phoneStatus === "taken" && (
                   <p className="text-xs text-red-600">Phone number is already registered</p>
