@@ -818,94 +818,20 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
               <FormField
                 control={form.control}
                 name="dateOfBirth"
-                render={({ field }) => {
-                  const currentValue = field.value || "";
-                  const [year, month, day] = currentValue.split("-");
-                  
-                  const handleDateChange = (type: "day" | "month" | "year", value: string) => {
-                    const currentYear = year || "";
-                    const currentMonth = month || "";
-                    const currentDay = day || "";
-                    
-                    let newYear = currentYear;
-                    let newMonth = currentMonth;
-                    let newDay = currentDay;
-                    
-                    if (type === "year") newYear = value;
-                    if (type === "month") newMonth = value.padStart(2, "0");
-                    if (type === "day") newDay = value.padStart(2, "0");
-                    
-                    if (newYear && newMonth && newDay) {
-                      field.onChange(`${newYear}-${newMonth}-${newDay}`);
-                    }
-                  };
-                  
-                  return (
-                    <FormItem>
-                      <FormLabel>Date of Birth *</FormLabel>
-                      <div className="grid grid-cols-3 gap-1">
-                        <Select onValueChange={(value) => handleDateChange("day", value)} value={day || ""}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Day" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
-                              <SelectItem key={d} value={d.toString()}>
-                                {d}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        
-                        <Select onValueChange={(value) => handleDateChange("month", value)} value={month || ""}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Month" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {[
-                              { value: "1", label: "January" },
-                              { value: "2", label: "February" },
-                              { value: "3", label: "March" },
-                              { value: "4", label: "April" },
-                              { value: "5", label: "May" },
-                              { value: "6", label: "June" },
-                              { value: "7", label: "July" },
-                              { value: "8", label: "August" },
-                              { value: "9", label: "September" },
-                              { value: "10", label: "October" },
-                              { value: "11", label: "November" },
-                              { value: "12", label: "December" },
-                            ].map((m) => (
-                              <SelectItem key={m.value} value={m.value}>
-                                {m.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        
-                        <Select onValueChange={(value) => handleDateChange("year", value)} value={year || ""}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Year" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {Array.from({ length: 83 }, (_, i) => 2006 - i).map((y) => (
-                              <SelectItem key={y} value={y.toString()}>
-                                {y}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <FormMessage />
-                    </FormItem>
-                  );
-                }}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Date of Birth *</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="date" 
+                        {...field}
+                        max="2006-12-31"
+                        min="1924-01-01"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
             </div>
           </div>
