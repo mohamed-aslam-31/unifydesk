@@ -47,6 +47,7 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
   const [phoneAttemptCounts, setPhoneAttemptCounts] = useState<Record<string, number>>({});
   const [phoneCooldowns, setPhoneCooldowns] = useState<Record<string, { endTime: number, seconds: number }>>({});
   const [phoneBlocked, setPhoneBlocked] = useState<Set<string>>(new Set());
+  const [verifiedPhoneNumbers, setVerifiedPhoneNumbers] = useState<Set<string>>(new Set());
   
   // Email OTP states
   const [emailOtpSendCount, setEmailOtpSendCount] = useState(0);
@@ -95,6 +96,37 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
   useEffect(() => {
     fetchCountries();
   }, []);
+
+  // Load verified phone numbers from localStorage and reset their counts
+  useEffect(() => {
+    try {
+      const savedVerifiedNumbers = localStorage.getItem('verifiedPhoneNumbers');
+      if (savedVerifiedNumbers) {
+        const verifiedSet = new Set<string>(JSON.parse(savedVerifiedNumbers));
+        setVerifiedPhoneNumbers(verifiedSet);
+        
+        // Reset counts for all verified phone numbers
+        const updatedResendCounts = { ...phoneResendCounts };
+        const updatedAttemptCounts = { ...phoneAttemptCounts };
+        const updatedCooldowns = { ...phoneCooldowns };
+        const updatedBlocked = new Set(phoneBlocked);
+        
+        verifiedSet.forEach(phone => {
+          updatedResendCounts[phone] = 0;
+          updatedAttemptCounts[phone] = 0;
+          delete updatedCooldowns[phone];
+          updatedBlocked.delete(phone);
+        });
+        
+        setPhoneResendCounts(updatedResendCounts);
+        setPhoneAttemptCounts(updatedAttemptCounts);
+        setPhoneCooldowns(updatedCooldowns);
+        setPhoneBlocked(updatedBlocked);
+      }
+    } catch (error) {
+      console.log('Failed to load verified phone numbers');
+    }
+  }, []); // Run once on component mount
 
   // Email OTP timer
   useEffect(() => {
@@ -515,6 +547,18 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
     const phoneValue = form.getValues('phone');
     setPhoneVerified(true);
     setLastVerifiedPhone(phoneValue);
+    
+    // Add to verified numbers set and save to localStorage
+    const updatedVerifiedNumbers = new Set(verifiedPhoneNumbers);
+    updatedVerifiedNumbers.add(phoneValue);
+    setVerifiedPhoneNumbers(updatedVerifiedNumbers);
+    
+    try {
+      localStorage.setItem('verifiedPhoneNumbers', JSON.stringify([...updatedVerifiedNumbers]));
+    } catch (error) {
+      console.log('Failed to save verified phone number');
+    }
+    
     // Clear all tracking for this phone since it's verified
     setPhoneOtpSentNumbers(prev => {
       const newSet = new Set(prev);
