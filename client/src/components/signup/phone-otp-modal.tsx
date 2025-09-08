@@ -329,6 +329,7 @@ export function PhoneOtpModal({
   
   // Update counts from props when phone changes
   useEffect(() => {
+    // Only clear OTP when phone actually changes, not on every prop update
     setOtp('');
     setSessionId(null);
     setResendCount(initialResendCount);
@@ -342,7 +343,18 @@ export function PhoneOtpModal({
     } else {
       setCooldownTime(0);
     }
-  }, [phone, initialResendCount, initialAttemptCount, initialCooldown]);
+  }, [phone]); // Only depend on phone to avoid clearing during typing
+  
+  // Separate effect to update counts without clearing OTP
+  useEffect(() => {
+    setResendCount(initialResendCount);
+    setWrongAttempts(initialAttemptCount);
+    
+    if (initialCooldown && initialCooldown.endTime > Date.now()) {
+      const remainingSeconds = Math.ceil((initialCooldown.endTime - Date.now()) / 1000);
+      setCooldownTime(remainingSeconds);
+    }
+  }, [initialResendCount, initialAttemptCount, initialCooldown]);
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -370,9 +382,12 @@ export function PhoneOtpModal({
               maxLength={6} 
               value={otp}
               onChange={(value) => {
-                // Only allow numbers
+                // Only allow numbers and prevent unnecessary updates
                 const numbersOnly = value.replace(/[^0-9]/g, '');
-                setOtp(numbersOnly);
+                // Only update if the value actually changed to prevent conflicts
+                if (numbersOnly !== otp) {
+                  setOtp(numbersOnly);
+                }
               }}
               disabled={isSubmitting || isBlocked || isResending}
             >
