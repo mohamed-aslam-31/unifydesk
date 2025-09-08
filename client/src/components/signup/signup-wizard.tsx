@@ -84,7 +84,7 @@ export function SignupWizard({ onComplete }: SignupWizardProps) {
       <FloatingBackground className="opacity-30 dark:opacity-20" />
       {/* Welcome Section */}
       {currentStep !== "complete" && (
-        <div className="dark:bg-slate-800/80 backdrop-blur-sm border-b border-slate-200 dark:border-slate-700 py-6 sm:py-8 relative z-10 bg-[#2a2c3700]">
+        <div className="dark:bg-slate-800/80 backdrop-blur-sm py-6 sm:py-8 relative z-10 bg-[#2a2c3700]">
           <div className="max-w-2xl mx-auto px-2 sm:px-4 lg:px-8">
             <div className="text-center space-y-4">
               {/* Animated Icon */}
