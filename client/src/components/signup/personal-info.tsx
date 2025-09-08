@@ -365,8 +365,8 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
     setUsernameStatus("checking");
 
     try {
-      const isAvailable = await validateField("username", value);
-      if (isAvailable) {
+      const result = await validateField("username", value);
+      if (result.available) {
         setUsernameStatus("available");
         form.clearErrors("username"); // Clear form validation errors
       } else {
@@ -421,8 +421,8 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
     setEmailStatus("checking");
 
     try {
-      const isAvailable = await validateField("email", value);
-      if (isAvailable) {
+      const result = await validateField("email", value);
+      if (result.available) {
         setEmailStatus("available");
         form.clearErrors("email"); // Clear form validation errors
       } else {
@@ -450,8 +450,8 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
     setPhoneStatus("checking");
 
     try {
-      const isAvailable = await validateField("phone", `+91${value}`);
-      if (isAvailable) {
+      const result = await validateField("phone", `+91${value}`);
+      if (result.available) {
         setPhoneStatus("valid");
         form.clearErrors("phone"); // Clear form validation errors
       } else {
