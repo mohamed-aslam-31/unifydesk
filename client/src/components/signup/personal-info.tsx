@@ -33,6 +33,8 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
   const [usernameStatus, setUsernameStatus] = useState<"idle" | "checking" | "available" | "taken">("idle");
   const [emailStatus, setEmailStatus] = useState<"idle" | "checking" | "available" | "taken" | "invalid">("idle");
   const [phoneStatus, setPhoneStatus] = useState<"idle" | "checking" | "valid" | "invalid" | "taken">("idle");
+  const [dobStatus, setDobStatus] = useState<"idle" | "valid" | "too-young" | "invalid">("idle");
+  const [dobError, setDobError] = useState<string | null>(null);
   
   // Verification states
   const [showEmailOTP, setShowEmailOTP] = useState(false);
@@ -281,6 +283,40 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
       return;
     }
     setLastNameError(null);
+  };
+
+  // Date of birth validation
+  const validateDateOfBirth = (dateString: string) => {
+    if (!dateString) {
+      setDobStatus("idle");
+      setDobError(null);
+      return;
+    }
+
+    const birthDate = new Date(dateString);
+    const today = new Date();
+    const age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    const dayDiff = today.getDate() - birthDate.getDate();
+
+    // Calculate exact age
+    const exactAge = age - (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0) ? 1 : 0);
+
+    if (exactAge < 18) {
+      setDobStatus("too-young");
+      setDobError("You must be at least 18 years old to register");
+    } else if (exactAge > 100) {
+      setDobStatus("invalid");
+      setDobError("Please enter a valid date of birth");
+    } else {
+      setDobStatus("valid");
+      setDobError(null);
+    }
+  };
+
+  const handleDateOfBirthChange = (value: string) => {
+    form.setValue("dateOfBirth", value);
+    validateDateOfBirth(value);
   };
 
   const validateUsername = async (value: string) => {
@@ -822,13 +858,24 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
                   <FormItem>
                     <FormLabel>Date of Birth *</FormLabel>
                     <FormControl>
-                      <Input 
-                        type="date" 
-                        {...field}
-                        max="2006-12-31"
-                        min="1924-01-01"
-                      />
+                      <div className="relative">
+                        <Input 
+                          type="date" 
+                          {...field}
+                          onChange={(e) => handleDateOfBirthChange(e.target.value)}
+                          max="2006-12-31"
+                          min="1924-01-01"
+                          className="pr-10"
+                        />
+                        <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                          {dobStatus === "valid" && <Check className="h-4 w-4 text-green-500" />}
+                          {(dobStatus === "too-young" || dobStatus === "invalid") && <X className="h-4 w-4 text-red-500" />}
+                        </div>
+                      </div>
                     </FormControl>
+                    {dobError && (
+                      <p className="text-xs text-red-600">{dobError}</p>
+                    )}
                     <FormMessage />
                   </FormItem>
                 )}
