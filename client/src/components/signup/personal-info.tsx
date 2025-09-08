@@ -126,6 +126,9 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
   const handleUsernameChange = async (username: string) => {
     form.setValue("username", username);
     
+    // Trigger form validation for live error display
+    setTimeout(() => form.trigger("username"), 100);
+    
     if (username.length >= 3) {
       setUsernameStatus("checking");
       try {
@@ -609,7 +612,15 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
                 <FormItem>
                   <FormLabel>First Name *</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter your first name" {...field} />
+                    <Input 
+                      placeholder="Enter your first name" 
+                      {...field}
+                      onChange={(e) => {
+                        field.onChange(e.target.value);
+                        // Trigger validation for this field only
+                        setTimeout(() => form.trigger("firstName"), 100);
+                      }}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -622,7 +633,15 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
                 <FormItem>
                   <FormLabel>Last Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter your last name" {...field} />
+                    <Input 
+                      placeholder="Enter your last name" 
+                      {...field}
+                      onChange={(e) => {
+                        field.onChange(e.target.value);
+                        // Trigger validation for this field only
+                        setTimeout(() => form.trigger("lastName"), 100);
+                      }}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
