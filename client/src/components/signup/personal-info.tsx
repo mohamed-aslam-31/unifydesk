@@ -450,7 +450,12 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
     setPhoneStatus("checking");
 
     try {
-      const result = await validateField("phone", `+91${value}`);
+      const response = await fetch('/api/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ field: 'phone', value: value, countryCode: '+91' })
+      });
+      const result = await response.json();
       if (result.available) {
         setPhoneStatus("valid");
         form.clearErrors("phone"); // Clear form validation errors
