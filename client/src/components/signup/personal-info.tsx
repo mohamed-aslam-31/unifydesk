@@ -840,8 +840,8 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
                       />
                       <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
                         {usernameStatus === "checking" && <Loader2 className="h-4 w-4 animate-spin text-slate-400" />}
-                        {usernameStatus === "available" && <Check className="h-4 w-4 text-green-500" />}
-                        {usernameStatus === "taken" && <X className="h-4 w-4 text-red-500" />}
+                        {usernameStatus === "available" && field.value && <Check className="h-4 w-4 text-green-500" />}
+                        {(usernameStatus === "taken" || (field.value && usernameStatus === "idle" && usernameError)) && <X className="h-4 w-4 text-red-500" />}
                       </div>
                     </div>
                   </FormControl>
@@ -896,8 +896,8 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
                           className="pr-10"
                         />
                         <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-                          {dobStatus === "valid" && <Check className="h-4 w-4 text-green-500" />}
-                          {(dobStatus === "too-young" || dobStatus === "invalid") && <X className="h-4 w-4 text-red-500" />}
+                          {dobStatus === "valid" && field.value && <Check className="h-4 w-4 text-green-500" />}
+                          {(dobStatus === "too-young" || dobStatus === "invalid") && field.value && <X className="h-4 w-4 text-red-500" />}
                         </div>
                       </div>
                     </FormControl>
