@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { Loader2, Check, X } from "lucide-react";
+import { Loader2, Check, X, Eye, EyeOff } from "lucide-react";
 import { signupSchema } from "@shared/schema";
 import { TermsModal } from "./terms-modal";
 import { VisualCaptcha } from "@/components/ui/visual-captcha";
@@ -67,6 +67,8 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
   const [captchaSessionId, setCaptchaSessionId] = useState<string | null>(null);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // Form setup with validation schema
   const form = useForm<z.infer<typeof signupSchema>>({
@@ -341,7 +343,7 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
 
   const validateUsername = async (value: string) => {
     if (!value.trim()) {
-      setUsernameError("Enter your Username");
+      setUsernameError(null);
       setUsernameStatus("idle");
       return;
     }
@@ -839,7 +841,7 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
                       </div>
                     </div>
                   </FormControl>
-                  {usernameError && (
+                  {usernameError && field.value && (
                     <p className="text-xs text-red-600">{usernameError}</p>
                   )}
                   <FormMessage />
@@ -895,7 +897,7 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
                         </div>
                       </div>
                     </FormControl>
-                    {dobError && (
+                    {dobError && field.value && (
                       <p className="text-xs text-red-600">{dobError}</p>
                     )}
                     <FormMessage />
@@ -1183,7 +1185,25 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
                   <FormItem>
                     <FormLabel>Password *</FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="Create password" {...field} />
+                      <div className="relative">
+                        <Input 
+                          type={showPassword ? "text" : "password"} 
+                          placeholder="Create password" 
+                          {...field} 
+                          className="pr-10"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                        >
+                          {showPassword ? (
+                            <EyeOff className="h-4 w-4 text-slate-400 hover:text-slate-600" />
+                          ) : (
+                            <Eye className="h-4 w-4 text-slate-400 hover:text-slate-600" />
+                          )}
+                        </button>
+                      </div>
                     </FormControl>
                     <PasswordStrength password={field.value || ''} />
                     <FormMessage />
@@ -1204,7 +1224,25 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
                     <FormItem>
                       <FormLabel>Confirm Password *</FormLabel>
                       <FormControl>
-                        <Input type="password" placeholder="Confirm password" {...field} />
+                        <div className="relative">
+                          <Input 
+                            type={showConfirmPassword ? "text" : "password"} 
+                            placeholder="Confirm password" 
+                            {...field} 
+                            className="pr-10"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                            className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                          >
+                            {showConfirmPassword ? (
+                              <EyeOff className="h-4 w-4 text-slate-400 hover:text-slate-600" />
+                            ) : (
+                              <Eye className="h-4 w-4 text-slate-400 hover:text-slate-600" />
+                            )}
+                          </button>
+                        </div>
                       </FormControl>
                       {isMatching && (
                         <p className="text-xs text-green-600">Passwords match</p>
