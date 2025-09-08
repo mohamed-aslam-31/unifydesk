@@ -491,6 +491,7 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
     try {
       const signupData: SignupData = {
         ...data,
+        lastName: data.lastName || "",
         captchaSessionId: captchaSessionId,
       };
 
@@ -1039,7 +1040,6 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
       {/* Terms Modal */}
       <TermsModal
         open={showTermsModal}
-        onClose={() => setShowTermsModal(false)}
         onAccept={() => {
           form.setValue("acceptTerms", true);
           setShowTermsModal(false);
