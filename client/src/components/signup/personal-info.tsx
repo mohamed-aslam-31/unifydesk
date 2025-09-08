@@ -46,6 +46,7 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
   const [phoneResendCounts, setPhoneResendCounts] = useState<Record<string, number>>({});
   const [phoneAttemptCounts, setPhoneAttemptCounts] = useState<Record<string, number>>({});
   const [phoneCooldowns, setPhoneCooldowns] = useState<Record<string, { endTime: number, seconds: number }>>({});
+  const [phoneBlocked, setPhoneBlocked] = useState<Set<string>>(new Set());
   
   // Email OTP states
   const [emailOtpSendCount, setEmailOtpSendCount] = useState(0);
@@ -443,6 +444,16 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
       return;
     }
     
+    // Check if this phone number is blocked
+    if (phoneBlocked.has(phoneValue)) {
+      toast({
+        title: "Phone Number Blocked",
+        description: "Your number was blocked due to too many failed OTP attempts. Please try again after 5 hours.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setShowPhoneOtpModal(true);
   };
 
@@ -465,6 +476,12 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
       const newCounts = { ...prev };
       delete newCounts[phoneValue];
       return newCounts;
+    });
+    // Remove from blocked list
+    setPhoneBlocked(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(phoneValue);
+      return newSet;
     });
     toast({
       title: "Phone verified",
@@ -507,6 +524,10 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
         }
       }));
     }
+  };
+  
+  const handlePhoneBlocked = (phone: string) => {
+    setPhoneBlocked(prev => new Set(prev).add(phone));
   };
 
   // Form submission
@@ -808,6 +829,7 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
               onResendUpdate={handlePhoneResendUpdate}
               onAttemptUpdate={handlePhoneAttemptUpdate}
               onCooldownUpdate={handlePhoneCooldownUpdate}
+              onPhoneBlocked={handlePhoneBlocked}
             />
           </div>
 

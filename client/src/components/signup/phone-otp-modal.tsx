@@ -18,6 +18,7 @@ interface PhoneOtpModalProps {
   onResendUpdate?: (phone: string, count: number) => void;
   onAttemptUpdate?: (phone: string, count: number) => void;
   onCooldownUpdate?: (phone: string, seconds: number) => void;
+  onPhoneBlocked?: (phone: string) => void;
 }
 
 export function PhoneOtpModal({ 
@@ -33,7 +34,8 @@ export function PhoneOtpModal({
   initialCooldown,
   onResendUpdate,
   onAttemptUpdate,
-  onCooldownUpdate
+  onCooldownUpdate,
+  onPhoneBlocked
 }: PhoneOtpModalProps) {
   const [otp, setOtp] = useState('');
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -136,6 +138,10 @@ export function PhoneOtpModal({
           
           if (data.message.includes("Blocked")) {
             setIsBlocked(true);
+            // Notify parent that this phone is blocked
+            if (onPhoneBlocked) {
+              onPhoneBlocked(phone);
+            }
             toast({
               title: "Phone Number Blocked",
               description: "Your number was blocked due to too many attempts. Please try again after 5 hours.",
@@ -233,6 +239,10 @@ export function PhoneOtpModal({
         
         if (response.status === 429) {
           setIsBlocked(true);
+          // Notify parent that this phone is blocked
+          if (onPhoneBlocked) {
+            onPhoneBlocked(phone);
+          }
           toast({
             title: "Phone Number Blocked",
             description: "Your number was blocked due to too many failed OTP attempts. Please try again after 5 hours.",
@@ -244,6 +254,10 @@ export function PhoneOtpModal({
 
         if (newAttempts >= 5) {
           setIsBlocked(true);
+          // Notify parent that this phone is blocked
+          if (onPhoneBlocked) {
+            onPhoneBlocked(phone);
+          }
           toast({
             title: "Phone Number Blocked",
             description: "Your number was blocked due to too many failed OTP attempts. Please try again after 5 hours.",
