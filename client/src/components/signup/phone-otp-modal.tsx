@@ -153,7 +153,9 @@ export function PhoneOtpModal({ open, onClose, phone, countryCode, onVerified, a
       const data = await response.json();
 
       if (!response.ok) {
-        setWrongAttempts(prev => prev + 1);
+        
+        const newAttempts = wrongAttempts + 1;
+        setWrongAttempts(newAttempts);
         
         if (response.status === 429) {
           setIsBlocked(true);
@@ -166,7 +168,7 @@ export function PhoneOtpModal({ open, onClose, phone, countryCode, onVerified, a
           return;
         }
 
-        if (wrongAttempts >= 4) { // Will be 5 after this attempt
+        if (newAttempts >= 5) {
           setIsBlocked(true);
           toast({
             title: "Account blocked",
@@ -179,7 +181,7 @@ export function PhoneOtpModal({ open, onClose, phone, countryCode, onVerified, a
 
         toast({
           title: "Invalid OTP",
-          description: `${data.message}. ${5 - wrongAttempts - 1} attempts remaining.`,
+          description: `${data.message}. ${5 - newAttempts} attempts remaining.`,
           variant: "destructive",
         });
         
@@ -206,17 +208,23 @@ export function PhoneOtpModal({ open, onClose, phone, countryCode, onVerified, a
     }
   };
 
-  // Reset state when modal closes
+  // Only reset OTP input when modal closes, keep other states
   useEffect(() => {
     if (!open) {
       setOtp('');
-      setSessionId(null);
-      setResendCount(0);
-      setCooldownTime(0);
-      setWrongAttempts(0);
-      setIsBlocked(false);
+      // Don't reset other states to preserve attempt counts
     }
   }, [open]);
+  
+  // Reset all states only when phone number changes
+  useEffect(() => {
+    setOtp('');
+    setSessionId(null);
+    setResendCount(0);
+    setCooldownTime(0);
+    setWrongAttempts(0);
+    setIsBlocked(false);
+  }, [phone]);
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -259,10 +267,18 @@ export function PhoneOtpModal({ open, onClose, phone, countryCode, onVerified, a
           </div>
 
           {/* Error display */}
-          {wrongAttempts > 0 && wrongAttempts < 5 && (
+          {wrongAttempts > 0 && wrongAttempts < 5 && !isBlocked && (
             <div className="text-center">
               <p className="text-sm text-red-600">
                 {5 - wrongAttempts} attempts remaining
+              </p>
+            </div>
+          )}
+          
+          {isBlocked && (
+            <div className="text-center">
+              <p className="text-sm text-red-600">
+                Account blocked for 5 hours
               </p>
             </div>
           )}
