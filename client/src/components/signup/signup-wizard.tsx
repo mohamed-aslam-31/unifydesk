@@ -83,60 +83,35 @@ export function SignupWizard({ onComplete }: SignupWizardProps) {
       {/* Three.js Floating Background */}
       <FloatingBackground className="opacity-30 dark:opacity-20" />
       
-      {/* Progress Bar */}
+      {/* Welcome Section */}
       {currentStep !== "complete" && (
-        <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border-b border-slate-200 dark:border-slate-700 py-4 sm:py-6 relative z-10">
+        <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border-b border-slate-200 dark:border-slate-700 py-6 sm:py-8 relative z-10">
           <div className="max-w-2xl mx-auto px-2 sm:px-4 lg:px-8">
-            <div className="flex items-center justify-center mb-4">
-              <div className="flex items-center space-x-4">
-                {/* Step 1 */}
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold transition-all duration-300 ${
-                  getStepNumber() >= 1 
-                    ? "bg-gradient-to-br from-primary to-primary/80" 
-                    : "bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400"
-                }`}>
-                  1
-                </div>
-                
-                {/* Progress between 1 and 2 */}
-                <div className="w-16 h-1 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-primary transition-all duration-500"
-                    style={{ width: getStepNumber() >= 2 ? "100%" : "0%" }}
-                  />
-                </div>
-                
-                {/* Step 2 */}
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold transition-all duration-300 ${
-                  getStepNumber() >= 2 
-                    ? "bg-gradient-to-br from-primary to-primary/80" 
-                    : "bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400"
-                }`}>
-                  2
-                </div>
-                
-                {/* Progress between 2 and 3 */}
-                <div className="w-16 h-1 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-primary transition-all duration-500"
-                    style={{ width: getStepNumber() >= 3 ? "100%" : "0%" }}
-                  />
-                </div>
-                
-                {/* Step 3 */}
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold transition-all duration-300 ${
-                  getStepNumber() >= 3 
-                    ? "bg-gradient-to-br from-primary to-primary/80" 
-                    : "bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400"
-                }`}>
-                  3
+            <div className="text-center space-y-4">
+              {/* Animated Icon */}
+              <div className="flex justify-center">
+                <div className="relative">
+                  <div className="w-16 h-16 bg-gradient-to-br from-primary to-primary/80 rounded-full flex items-center justify-center animate-pulse">
+                    <svg className="w-8 h-8 text-white animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-4m-5 0H3m2 0h4M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                  </div>
+                  <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full animate-ping"></div>
                 </div>
               </div>
-            </div>
-            <div className="text-center">
-              <p className="text-sm text-slate-600 dark:text-slate-400">
-                Step {getStepNumber()} of 3 - {getStepLabel()}
-              </p>
+              
+              {/* Welcome Message */}
+              <div className="space-y-2">
+                <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
+                  Welcome to UnifyDesk
+                </h1>
+                <p className="text-lg text-slate-600 dark:text-slate-300 font-medium">
+                  Create your account to scale your business
+                </p>
+                <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto">
+                  Join thousands of entrepreneurs who trust UnifyDesk to streamline their operations and boost productivity
+                </p>
+              </div>
             </div>
           </div>
         </div>
