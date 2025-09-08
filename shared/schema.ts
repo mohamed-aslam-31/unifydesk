@@ -196,7 +196,7 @@ export const signupSchema = z.object({
 export const adminRoleSchema = z.object({
   handlerType: z.enum(["owner", "accountant", "auditor"]),
   additionalInfo: z.string().optional(),
-  profilePicture: z.string().optional(),
+  profilePicture: z.string().min(1, "Profile picture is required"),
 });
 
 export const employeeRoleSchema = z.object({

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { adminRoleSchema } from "@shared/schema";
@@ -9,9 +9,12 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Crown, Upload, Clock, Loader2 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Crown, Upload, Clock, Loader2, Crop } from "lucide-react";
 import { submitRoleData } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
+import ReactCrop, { type Crop, centerCrop, makeAspectCrop } from 'react-image-crop';
+import 'react-image-crop/dist/ReactCrop.css';
 
 interface AdminFormProps {
   sessionToken: string;
@@ -22,12 +25,17 @@ interface AdminFormProps {
 export function AdminForm({ sessionToken, onSuccess, onBack }: AdminFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [showCropModal, setShowCropModal] = useState(false);
+  const [imageToCrop, setImageToCrop] = useState<string | null>(null);
+  const [crop, setCrop] = useState<Crop>();
+  const [completedCrop, setCompletedCrop] = useState<Crop>();
+  const imageRef = useRef<HTMLImageElement>(null);
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof adminRoleSchema>>({
     resolver: zodResolver(adminRoleSchema),
     defaultValues: {
-      handlerType: "",
+      handlerType: "" as any,
       additionalInfo: "",
       profilePicture: "",
     },
