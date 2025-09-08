@@ -184,7 +184,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           attempts: attempts.attempts,
           resendAttempts: attempts.resendAttempts || 0,
           lastAttempt: new Date(),
-          lastResend: attempts.lastResend,
+          lastResend: attempts.lastResend || undefined,
           blockedUntil,
         });
         return res.status(429).json({ 

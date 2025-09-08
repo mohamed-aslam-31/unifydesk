@@ -39,7 +39,9 @@ export const otpAttempts = pgTable('otp_attempts', {
   identifier: varchar('identifier', { length: 255 }).notNull(),
   type: varchar('type', { length: 50 }).notNull(),
   attempts: integer('attempts').default(0).notNull(),
+  resendAttempts: integer('resend_attempts').default(0).notNull(),
   lastAttempt: timestamp('last_attempt'),
+  lastResend: timestamp('last_resend'),
   blockedUntil: timestamp('blocked_until'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
