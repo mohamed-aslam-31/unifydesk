@@ -18,6 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { PhoneOtpModal } from "./phone-otp-modal";
 import { PasswordStrength } from "./password-strength";
 import { Textarea } from "@/components/ui/textarea";
+import { ModernDatePicker } from "@/components/ui/modern-date-picker";
 
 interface PersonalInfoProps {
   onSuccess: (sessionToken: string, user: any) => void;
@@ -62,6 +63,7 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
   const [cities, setCities] = useState<any[]>([]);
   const [captchaSessionId, setCaptchaSessionId] = useState<string | null>(null);
   const [showTermsModal, setShowTermsModal] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Form setup with validation schema
@@ -819,86 +821,29 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
                 control={form.control}
                 name="dateOfBirth"
                 render={({ field }) => {
-                  const currentValue = field.value || "";
-                  const [year, month, day] = currentValue.split("-");
-                  
-                  const handleDateChange = (type: "day" | "month" | "year", value: string) => {
-                    const currentYear = year || "";
-                    const currentMonth = month || "";
-                    const currentDay = day || "";
-                    
-                    let newYear = currentYear;
-                    let newMonth = currentMonth;
-                    let newDay = currentDay;
-                    
-                    if (type === "year") newYear = value;
-                    if (type === "month") newMonth = value.padStart(2, "0");
-                    if (type === "day") newDay = value.padStart(2, "0");
-                    
-                    if (newYear && newMonth && newDay) {
-                      const isValidDate = !isNaN(Date.parse(`${newYear}-${newMonth}-${newDay}`));
-                      if (isValidDate) {
-                        field.onChange(`${newYear}-${newMonth}-${newDay}`);
-                      }
-                    }
+                  const formatDisplayDate = (dateValue: string) => {
+                    if (!dateValue) return "Select date of birth";
+                    const date = new Date(dateValue + 'T00:00:00');
+                    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                    return `${dayNames[date.getDay()]}, ${monthNames[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
                   };
-                  
+
                   return (
                     <FormItem>
                       <FormLabel>Date of Birth *</FormLabel>
-                      <div className="grid grid-cols-3 gap-2">
-                        <div>
-                          <Input
-                            type="number"
-                            placeholder="DD"
-                            min="1"
-                            max="31"
-                            value={day || ""}
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              if (val === "" || (parseInt(val) >= 1 && parseInt(val) <= 31)) {
-                                handleDateChange("day", val);
-                              }
-                            }}
-                            className="text-center"
-                          />
-                          <p className="text-xs text-muted-foreground text-center mt-1">Day</p>
-                        </div>
-                        <div>
-                          <Input
-                            type="number"
-                            placeholder="MM"
-                            min="1"
-                            max="12"
-                            value={month || ""}
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              if (val === "" || (parseInt(val) >= 1 && parseInt(val) <= 12)) {
-                                handleDateChange("month", val);
-                              }
-                            }}
-                            className="text-center"
-                          />
-                          <p className="text-xs text-muted-foreground text-center mt-1">Month</p>
-                        </div>
-                        <div>
-                          <Input
-                            type="number"
-                            placeholder="YYYY"
-                            min="1924"
-                            max="2006"
-                            value={year || ""}
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              if (val === "" || (parseInt(val) >= 1924 && parseInt(val) <= 2006)) {
-                                handleDateChange("year", val);
-                              }
-                            }}
-                            className="text-center"
-                          />
-                          <p className="text-xs text-muted-foreground text-center mt-1">Year</p>
-                        </div>
-                      </div>
+                      <FormControl>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="w-full justify-start text-left font-normal"
+                          onClick={() => setShowDatePicker(true)}
+                        >
+                          <span className={!field.value ? "text-muted-foreground" : ""}>
+                            {formatDisplayDate(field.value)}
+                          </span>
+                        </Button>
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   );
@@ -1298,6 +1243,20 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
           setShowTermsModal(false);
         }}
       />
+
+      {/* Modern Date Picker */}
+      {showDatePicker && (
+        <ModernDatePicker
+          value={form.getValues("dateOfBirth")}
+          onChange={(date) => {
+            form.setValue("dateOfBirth", date);
+            setShowDatePicker(false);
+          }}
+          onClose={() => setShowDatePicker(false)}
+          minYear={1924}
+          maxYear={2006}
+        />
+      )}
     </div>
   );
 }
