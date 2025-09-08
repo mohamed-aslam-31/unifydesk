@@ -47,10 +47,6 @@ export function PasswordStrength({ password }: PasswordStrengthProps) {
   // Only show unmet requirements as errors
   const unmetRequirements = requirements.filter(req => !req.met && password.length > 0);
 
-  if (password.length === 0) {
-    return null;
-  }
-
   return (
     <div className="mt-2">
       <div className="flex items-center justify-between mb-2">
