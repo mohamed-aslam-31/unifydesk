@@ -10,9 +10,10 @@ interface PhoneOtpModalProps {
   phone: string;
   countryCode: string;
   onVerified: () => void;
+  autoSendOtp?: boolean;
 }
 
-export function PhoneOtpModal({ open, onClose, phone, countryCode, onVerified }: PhoneOtpModalProps) {
+export function PhoneOtpModal({ open, onClose, phone, countryCode, onVerified, autoSendOtp = true }: PhoneOtpModalProps) {
   const [otp, setOtp] = useState('');
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -47,12 +48,12 @@ export function PhoneOtpModal({ open, onClose, phone, countryCode, onVerified }:
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Send OTP initially when modal opens
+  // Send OTP initially when modal opens (only if autoSendOtp is true)
   useEffect(() => {
-    if (open && !sessionId) {
+    if (open && !sessionId && autoSendOtp) {
       handleSendOtp();
     }
-  }, [open]);
+  }, [open, autoSendOtp]);
 
   const handleSendOtp = async () => {
     try {
