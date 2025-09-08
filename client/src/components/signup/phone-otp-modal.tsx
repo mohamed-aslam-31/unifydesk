@@ -56,10 +56,6 @@ export function PhoneOtpModal({
       interval = setInterval(() => {
         setCooldownTime(prev => {
           const newTime = prev - 1;
-          // Update parent with new cooldown time
-          if (onCooldownUpdate) {
-            onCooldownUpdate(phone, newTime);
-          }
           return newTime > 0 ? newTime : 0;
         });
       }, 1000);
@@ -67,6 +63,16 @@ export function PhoneOtpModal({
     return () => {
       if (interval) clearInterval(interval);
     };
+  }, [cooldownTime]);
+  
+  // Separate effect to update parent without causing render issues
+  useEffect(() => {
+    if (onCooldownUpdate && cooldownTime >= 0) {
+      const timeoutId = setTimeout(() => {
+        onCooldownUpdate(phone, cooldownTime);
+      }, 0);
+      return () => clearTimeout(timeoutId);
+    }
   }, [cooldownTime, phone, onCooldownUpdate]);
 
   // Format cooldown time as MM:SS
@@ -121,8 +127,8 @@ export function PhoneOtpModal({
         if (response.status === 429) {
           if (data.message.includes("Maximum resend attempts")) {
             toast({
-              title: "Resend limit reached",
-              description: "You have reached the maximum number of resend attempts. Please try again later.",
+              title: "Resend Limit Reached",
+              description: "Your number has reached the maximum resend limit. Please try again later.",
               variant: "destructive",
             });
             return;
@@ -131,8 +137,8 @@ export function PhoneOtpModal({
           if (data.message.includes("Blocked")) {
             setIsBlocked(true);
             toast({
-              title: "Account blocked",
-              description: "Too many attempts. Your account is blocked for 5 hours.",
+              title: "Phone Number Blocked",
+              description: "Your number was blocked due to too many attempts. Please try again after 5 hours.",
               variant: "destructive",
             });
             return;
@@ -187,8 +193,8 @@ export function PhoneOtpModal({
     }
     if (resendCount >= 3) {
       toast({
-        title: "Resend limit reached",
-        description: "Maximum 3 resends allowed per phone number",
+        title: "Resend Limit Reached",
+        description: "Your number has reached the maximum of 3 resend attempts.",
         variant: "destructive",
       });
       return;
@@ -228,8 +234,8 @@ export function PhoneOtpModal({
         if (response.status === 429) {
           setIsBlocked(true);
           toast({
-            title: "Account blocked",
-            description: "Too many failed attempts. Your account is blocked for 5 hours.",
+            title: "Phone Number Blocked",
+            description: "Your number was blocked due to too many failed OTP attempts. Please try again after 5 hours.",
             variant: "destructive",
           });
           onClose();
@@ -239,8 +245,8 @@ export function PhoneOtpModal({
         if (newAttempts >= 5) {
           setIsBlocked(true);
           toast({
-            title: "Account blocked",
-            description: "Too many failed OTP attempts. Your account is blocked for 5 hours.",
+            title: "Phone Number Blocked",
+            description: "Your number was blocked due to too many failed OTP attempts. Please try again after 5 hours.",
             variant: "destructive",
           });
           onClose();
