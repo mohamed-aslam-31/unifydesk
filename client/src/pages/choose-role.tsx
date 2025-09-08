@@ -14,12 +14,6 @@ export default function ChooseRolePage() {
   const [selectedRole, setSelectedRole] = useState<string>("");
   const [showRoleForm, setShowRoleForm] = useState(false);
 
-  useEffect(() => {
-    if (!isLoading && !user) {
-      setLocation("/signup");
-    }
-  }, [user, isLoading, setLocation]);
-
   const handleRoleSelect = (role: string) => {
     setSelectedRole(role);
     
@@ -42,17 +36,7 @@ export default function ChooseRolePage() {
     setSelectedRole("");
   };
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return null;
-  }
+  // AuthGuard already handles authentication, so we know user exists here
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col">
