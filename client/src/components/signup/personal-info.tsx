@@ -833,7 +833,7 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
                           onCheckedChange={field.onChange}
                         />
                         <Label htmlFor="whatsapp" className="text-sm text-slate-600 dark:text-slate-400">
-                          This number uses WhatsApp
+                          This is a WhatsApp number
                         </Label>
                       </div>
                     )}

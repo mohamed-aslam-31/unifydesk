@@ -52,8 +52,8 @@ export function VisualCaptcha({ onVerified, onError, className, hasError }: Visu
     if (!ctx) return;
 
     // Set canvas size
-    canvas.width = 200;
-    canvas.height = 80;
+    canvas.width = 150;
+    canvas.height = 60;
 
     // Clear canvas with light background
     ctx.fillStyle = '#f8f9fa';
@@ -62,7 +62,7 @@ export function VisualCaptcha({ onVerified, onError, className, hasError }: Visu
     // Add some noise lines for security
     ctx.strokeStyle = '#e9ecef';
     ctx.lineWidth = 1;
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < 5; i++) {
       ctx.beginPath();
       ctx.moveTo(Math.random() * canvas.width, Math.random() * canvas.height);
       ctx.lineTo(Math.random() * canvas.width, Math.random() * canvas.height);
@@ -70,7 +70,7 @@ export function VisualCaptcha({ onVerified, onError, className, hasError }: Visu
     }
 
     // Draw the text
-    ctx.font = 'bold 24px monospace';
+    ctx.font = 'bold 18px monospace';
     ctx.fillStyle = '#2d3748';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -78,7 +78,7 @@ export function VisualCaptcha({ onVerified, onError, className, hasError }: Visu
     // Add slight rotation and positioning variation for each character
     const centerX = canvas.width / 2;
     const centerY = canvas.height / 2;
-    const spacing = 25;
+    const spacing = 20;
     const startX = centerX - (text.length - 1) * spacing / 2;
 
     for (let i = 0; i < text.length; i++) {
@@ -95,7 +95,7 @@ export function VisualCaptcha({ onVerified, onError, className, hasError }: Visu
 
     // Add some noise dots
     ctx.fillStyle = '#a0aec0';
-    for (let i = 0; i < 30; i++) {
+    for (let i = 0; i < 20; i++) {
       ctx.beginPath();
       ctx.arc(
         Math.random() * canvas.width,
