@@ -489,8 +489,13 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
         throw new Error(data.message || 'Failed to send OTP');
       }
       
-      // Success - mark as sent and open modal without auto-send
+      // Success - mark as sent, set cooldown, and open modal
       handlePhoneOtpSent(phoneValue);
+      
+      // Update resend count for this phone
+      const newResendCount = (phoneResendCounts[phoneValue] || 0) + 1;
+      setPhoneResendCounts(prev => ({ ...prev, [phoneValue]: newResendCount }));
+      
       toast({
         title: "OTP sent",
         description: `Verification code sent to +91 ${phoneValue}`,

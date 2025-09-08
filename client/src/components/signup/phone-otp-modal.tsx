@@ -102,6 +102,16 @@ export function PhoneOtpModal({
       return;
     }
     
+    // Check resend limit
+    if (resendCount >= 3) {
+      toast({
+        title: "Resend Limit Reached",
+        description: "Your number has reached the maximum of 3 resend attempts.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     try {
       const response = await fetch('/api/send-otp', {
         method: 'POST',
@@ -117,10 +127,14 @@ export function PhoneOtpModal({
 
       if (!response.ok) {
         if (data.remainingCooldown) {
-          setCooldownTime(data.remainingCooldown);
+          const newCooldown = Math.ceil(data.remainingCooldown);
+          setCooldownTime(newCooldown);
+          if (onCooldownUpdate) {
+            onCooldownUpdate(phone, newCooldown);
+          }
           toast({
             title: "Please wait",
-            description: `Wait ${formatCooldown(data.remainingCooldown)} before requesting another OTP`,
+            description: `Wait ${formatCooldown(newCooldown)} before requesting another OTP`,
             variant: "destructive",
           });
           return;
@@ -159,11 +173,6 @@ export function PhoneOtpModal({
       setResendCount(newCount);
       setCooldownTime(180); // 3 minutes
       
-      // Notify parent that OTP was sent for this phone number
-      if (onOtpSent) {
-        onOtpSent(phone);
-      }
-      
       // Update parent with new resend count
       if (onResendUpdate) {
         onResendUpdate(phone, newCount);
@@ -172,6 +181,11 @@ export function PhoneOtpModal({
       // Update parent with cooldown
       if (onCooldownUpdate) {
         onCooldownUpdate(phone, 180);
+      }
+      
+      // Notify parent that OTP was sent for this phone number
+      if (onOtpSent) {
+        onOtpSent(phone);
       }
       
       toast({
@@ -189,22 +203,7 @@ export function PhoneOtpModal({
   };
 
   const handleResendOtp = async () => {
-    if (cooldownTime > 0) {
-      toast({
-        title: "Please wait",
-        description: `Wait ${formatCooldown(cooldownTime)} before resending`,
-        variant: "destructive",
-      });
-      return;
-    }
-    if (resendCount >= 3) {
-      toast({
-        title: "Resend Limit Reached",
-        description: "Your number has reached the maximum of 3 resend attempts.",
-        variant: "destructive",
-      });
-      return;
-    }
+    // All validation is now in handleSendOtp
     await handleSendOtp();
   };
 
@@ -388,7 +387,7 @@ export function PhoneOtpModal({
             ) : (
               <button
                 onClick={handleResendOtp}
-                disabled={isSubmitting || isBlocked}
+                disabled={isSubmitting || isBlocked || cooldownTime > 0}
                 className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 underline transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Resend OTP
