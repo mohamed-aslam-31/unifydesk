@@ -1070,10 +1070,10 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
                       </div>
                     </FormControl>
                     {isMatching && (
-                      <p className="text-xs text-green-600">Password match</p>
+                      <p className="text-xs text-green-600">Passwords match</p>
                     )}
                     {isNotMatching && (
-                      <p className="text-xs text-red-600">Doesn't match</p>
+                      <p className="text-xs text-red-600">Passwords don't match</p>
                     )}
                     <FormMessage />
                   </FormItem>
