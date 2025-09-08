@@ -9,19 +9,19 @@ export function PasswordStrength({ password }: PasswordStrengthProps) {
   const requirements = useMemo(() => {
     return [
       {
-        label: "At least 8 characters",
+        label: "Password must be at least 8 characters",
         met: password.length >= 8,
       },
       {
-        label: "Contains uppercase letter",
+        label: "Password must contain an uppercase letter",
         met: /[A-Z]/.test(password),
       },
       {
-        label: "Contains number",
+        label: "Password must contain a number",
         met: /\d/.test(password),
       },
       {
-        label: "Contains special character",
+        label: "Password must contain a special character",
         met: /[!@#$%^&*(),.?":{}|<>]/.test(password),
       },
     ];
@@ -44,6 +44,13 @@ export function PasswordStrength({ password }: PasswordStrengthProps) {
     return "Strong";
   };
 
+  // Only show unmet requirements as errors
+  const unmetRequirements = requirements.filter(req => !req.met && password.length > 0);
+
+  if (password.length === 0) {
+    return null;
+  }
+
   return (
     <div className="mt-2">
       <div className="flex items-center justify-between mb-2">
@@ -65,20 +72,16 @@ export function PasswordStrength({ password }: PasswordStrengthProps) {
         />
       </div>
 
-      <div className="text-xs text-slate-600 dark:text-slate-400 space-y-1">
-        {requirements.map((requirement, index) => (
-          <div key={index} className="flex items-center space-x-2">
-            {requirement.met ? (
-              <Check className="w-3 h-3 text-green-500" />
-            ) : (
-              <X className="w-3 h-3 text-red-500" />
-            )}
-            <span className={requirement.met ? "text-green-600 dark:text-green-400" : ""}>
+      {/* Show only unmet requirements as errors */}
+      {unmetRequirements.length > 0 && (
+        <div className="text-xs text-red-600 space-y-1">
+          {unmetRequirements.map((requirement, index) => (
+            <div key={index}>
               {requirement.label}
-            </span>
-          </div>
-        ))}
-      </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

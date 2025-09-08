@@ -137,23 +137,27 @@ export type InsertCaptcha = z.infer<typeof insertCaptchaSchema>;
 export const signupSchema = z.object({
   firstName: z.string()
     .min(1, "Enter your First Name")
-    .max(15, "First name must not exceed 15 characters")
-    .regex(/^[a-zA-Z]+$/, "First name can only contain letters"),
+    .max(40, "First name must not exceed 40 characters")
+    .regex(/^[a-zA-Z]+( [a-zA-Z]+)*$/, "First name can only contain letters and single spaces")
+    .refine(val => !val.includes('  '), "No consecutive spaces allowed"),
   lastName: z.string()
-    .max(15, "Last name must not exceed 15 characters")
-    .regex(/^[a-zA-Z]*$/, "Last name can only contain letters")
+    .max(60, "Last name must not exceed 60 characters")
+    .regex(/^[a-zA-Z]*( [a-zA-Z]+)*$/, "Last name can only contain letters and single spaces")
+    .refine(val => !val || !val.includes('  '), "No consecutive spaces allowed")
     .optional()
     .or(z.literal("")),
   username: z.string()
     .min(1, "Enter your Username")
     .min(3, "Username must be at least 3 characters")
-    .max(10, "Username must not exceed 10 characters")
+    .max(15, "Username must not exceed 15 characters")
     .regex(/^[a-zA-Z0-9_!@#$%^&*(),.?":{}|<>-]+$/, "Username cannot contain spaces"),
   email: z.string().min(1, "Enter Your Email").email("Enter a valid email address"),
   phone: z.string().min(1, "Enter your phone number").min(10, "Phone number must be at least 10 digits"),
   countryCode: z.string().min(1, "Country code is required"),
   isWhatsApp: z.boolean().default(false),
-  gender: z.enum(["male", "female", "other", "prefer-not-to-say"]).optional(),
+  gender: z.enum(["male", "female", "other", "prefer-not-to-say"], {
+    required_error: "Please select your gender"
+  }),
   dateOfBirth: z.string().min(1, "Select your Date of Birth").refine((date) => {
     const birth = new Date(date);
     const today = new Date();
