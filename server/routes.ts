@@ -166,7 +166,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { identifier, type } = req.body; // identifier = email or phone, type = 'email' or 'phone'
       
-      // Check rate limiting
+      // Check if user is blocked
       const attempts = await storage.getOtpAttempts(identifier, type);
       if (attempts && attempts.blockedUntil && attempts.blockedUntil > new Date()) {
         return res.status(429).json({ 
@@ -175,13 +175,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // Check if account is blocked due to too many verification attempts
       if (attempts && attempts.attempts >= 5) {
         const blockedUntil = new Date(Date.now() + 5 * 60 * 60 * 1000); // 5 hours
         await storage.createOrUpdateOtpAttempts({
           identifier,
           type,
           attempts: attempts.attempts,
+          resendAttempts: attempts.resendAttempts || 0,
           lastAttempt: new Date(),
+          lastResend: attempts.lastResend,
           blockedUntil,
         });
         return res.status(429).json({ 
@@ -190,12 +193,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // Check resend limits (max 3 resends)
+      const resendAttempts = attempts?.resendAttempts || 0;
+      if (resendAttempts >= 3) {
+        return res.status(429).json({ 
+          message: "Maximum resend attempts reached. Please try again later."
+        });
+      }
+
+      // Check resend cooldown (3 minutes)
+      if (attempts && attempts.lastResend) {
+        const timeSinceLastResend = Date.now() - new Date(attempts.lastResend).getTime();
+        const cooldownTime = 3 * 60 * 1000; // 3 minutes
+        if (timeSinceLastResend < cooldownTime) {
+          const remainingTime = Math.ceil((cooldownTime - timeSinceLastResend) / 1000);
+          return res.status(429).json({ 
+            message: "Please wait before requesting another OTP.",
+            remainingCooldown: remainingTime
+          });
+        }
+      }
+
       // Generate OTP
       const otp = Math.floor(100000 + Math.random() * 900000).toString();
       
       // Create OTP session
       const otpSessionId = crypto.randomBytes(32).toString('hex');
-      const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+      const expiresAt = new Date(Date.now() + 4 * 60 * 1000); // 4 minutes
       
       // Store OTP session
       global.otpSessions = global.otpSessions || new Map();
@@ -207,12 +231,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         attempts: 0
       });
       
-      // Update attempts in database
+      // Update resend attempts in database
       await storage.createOrUpdateOtpAttempts({
         identifier,
         type,
-        attempts: (attempts?.attempts || 0) + 1,
-        lastAttempt: new Date(),
+        attempts: attempts?.attempts || 0,
+        resendAttempts: (attempts?.resendAttempts || 0) + 1,
+        lastAttempt: attempts?.lastAttempt,
+        lastResend: new Date(),
         blockedUntil: undefined,
       });
 
@@ -222,7 +248,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ 
         message: "OTP sent successfully", 
         sessionId: otpSessionId,
-        remainingAttempts: 5 - ((attempts?.attempts || 0) + 1) 
+        remainingResends: 3 - ((attempts?.resendAttempts || 0) + 1),
+        expiresAt: expiresAt.toISOString()
       });
     } catch (error) {
       console.error("Send OTP error:", error);

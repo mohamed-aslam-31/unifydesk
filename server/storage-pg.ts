@@ -144,7 +144,9 @@ export class PostgreSQLStorage implements IStorage {
     if (existing) {
       const updateData: Partial<NewOtpAttempt> = {
         attempts: attempt.attempts ?? existing.attempts,
+        resendAttempts: attempt.resendAttempts ?? existing.resendAttempts,
         lastAttempt: attempt.lastAttempt ?? existing.lastAttempt,
+        lastResend: attempt.lastResend ?? existing.lastResend,
         blockedUntil: attempt.blockedUntil ?? existing.blockedUntil,
       };
 
@@ -158,7 +160,9 @@ export class PostgreSQLStorage implements IStorage {
         identifier: attempt.identifier,
         type: attempt.type,
         attempts: attempt.attempts ?? 0,
+        resendAttempts: attempt.resendAttempts ?? 0,
         lastAttempt: attempt.lastAttempt,
+        lastResend: attempt.lastResend,
         blockedUntil: attempt.blockedUntil,
       };
 
@@ -322,7 +326,9 @@ export class PostgreSQLStorage implements IStorage {
       identifier: attempt.identifier,
       type: attempt.type,
       attempts: attempt.attempts,
+      resendAttempts: attempt.resendAttempts,
       lastAttempt: attempt.lastAttempt ?? undefined,
+      lastResend: attempt.lastResend ?? undefined,
       blockedUntil: attempt.blockedUntil ?? undefined,
       createdAt: attempt.createdAt,
     };

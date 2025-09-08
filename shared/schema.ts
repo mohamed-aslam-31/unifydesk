@@ -43,7 +43,9 @@ export const otpAttempts = pgTable('otp_attempts', {
   identifier: varchar('identifier', { length: 255 }).notNull(),
   type: varchar('type', { length: 20 }).notNull(),
   attempts: integer('attempts').notNull().default(0),
+  resendAttempts: integer('resend_attempts').notNull().default(0),
   lastAttempt: timestamp('last_attempt'),
+  lastResend: timestamp('last_resend'),
   blockedUntil: timestamp('blocked_until'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
@@ -114,6 +116,9 @@ export const insertSessionSchema = createInsertSchema(sessions).omit({
 export const insertOtpAttemptSchema = createInsertSchema(otpAttempts).omit({
   id: true,
   createdAt: true,
+}).extend({
+  resendAttempts: z.number().optional(),
+  lastResend: z.date().optional(),
 });
 
 export const insertRoleDataSchema = createInsertSchema(roleData).omit({
