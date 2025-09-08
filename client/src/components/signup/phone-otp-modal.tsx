@@ -93,6 +93,11 @@ export function PhoneOtpModal({
   }, [open, autoSendOtp]);
 
   const handleSendOtp = async (isResendAction = false) => {
+    // Prevent multiple simultaneous calls
+    if (isResendAction && isResending) {
+      return;
+    }
+    
     // Check if still in cooldown
     if (cooldownTime > 0) {
       toast({
@@ -135,9 +140,12 @@ export function PhoneOtpModal({
         if (data.remainingCooldown) {
           const newCooldown = Math.ceil(data.remainingCooldown);
           setCooldownTime(newCooldown);
-          if (onCooldownUpdate) {
-            onCooldownUpdate(phone, newCooldown);
-          }
+          // Update parent in next tick to avoid conflicts
+          setTimeout(() => {
+            if (onCooldownUpdate) {
+              onCooldownUpdate(phone, newCooldown);
+            }
+          }, 0);
           toast({
             title: "Please wait",
             description: `Wait ${formatCooldown(newCooldown)} before requesting another OTP`,
@@ -159,9 +167,11 @@ export function PhoneOtpModal({
           if (data.message.includes("Blocked")) {
             setIsBlocked(true);
             // Notify parent that this phone is blocked
-            if (onPhoneBlocked) {
-              onPhoneBlocked(phone);
-            }
+            setTimeout(() => {
+              if (onPhoneBlocked) {
+                onPhoneBlocked(phone);
+              }
+            }, 0);
             toast({
               title: "Phone Number Blocked",
               description: "Your number was blocked due to too many attempts. Please try again after 5 hours.",
@@ -174,25 +184,24 @@ export function PhoneOtpModal({
         throw new Error(data.message);
       }
 
+      // Success - batch all state updates
       setSessionId(data.sessionId);
       const newCount = resendCount + 1;
       setResendCount(newCount);
       setCooldownTime(180); // 3 minutes
       
-      // Update parent with new resend count
-      if (onResendUpdate) {
-        onResendUpdate(phone, newCount);
-      }
-      
-      // Update parent with cooldown
-      if (onCooldownUpdate) {
-        onCooldownUpdate(phone, 180);
-      }
-      
-      // Notify parent that OTP was sent for this phone number
-      if (onOtpSent) {
-        onOtpSent(phone);
-      }
+      // Update parent components in next tick to avoid re-render conflicts
+      setTimeout(() => {
+        if (onResendUpdate) {
+          onResendUpdate(phone, newCount);
+        }
+        if (onCooldownUpdate) {
+          onCooldownUpdate(phone, 180);
+        }
+        if (onOtpSent) {
+          onOtpSent(phone);
+        }
+      }, 0);
       
       toast({
         title: "OTP sent",
@@ -206,12 +215,19 @@ export function PhoneOtpModal({
         variant: "destructive",
       });
     } finally {
-      // Always clear loading state
-      setIsResending(false);
+      // Clear loading state in next tick to prevent UI flashing
+      setTimeout(() => {
+        setIsResending(false);
+      }, 100);
     }
   };
 
   const handleResendOtp = async () => {
+    // Debounce rapid clicks
+    if (isResending) {
+      return;
+    }
+    
     // Call handleSendOtp with resend flag
     await handleSendOtp(true);
   };
