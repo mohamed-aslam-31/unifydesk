@@ -13,14 +13,43 @@ export function AuthGuard({
   requireAuth = true, 
   redirectTo = "/login" 
 }: AuthGuardProps) {
-  const [, setLocation] = useLocation();
+  const [currentLocation, setLocation] = useLocation();
   const { user, isLoading } = useSession();
 
   useEffect(() => {
-    if (!isLoading && requireAuth && !user) {
+    if (isLoading) return;
+
+    // Handle protected routes - require authentication
+    if (requireAuth && !user) {
       setLocation(redirectTo);
+      return;
     }
-  }, [user, isLoading, requireAuth, redirectTo, setLocation]);
+
+    // Handle public routes - redirect authenticated users appropriately
+    if (!requireAuth && user) {
+      const currentPath = currentLocation;
+      
+      if (currentPath === '/login' || currentPath === '/signup') {
+        // Check if user needs to choose a role
+        if (!user.role) {
+          setLocation('/choose-role');
+          return;
+        }
+        
+        // Redirect based on role status
+        if (user.roleStatus === 'pending') {
+          setLocation('/pending');
+          return;
+        } else if (user.roleStatus === 'approved') {
+          setLocation('/dashboard');
+          return;
+        } else {
+          setLocation('/home');
+          return;
+        }
+      }
+    }
+  }, [user, isLoading, requireAuth, redirectTo, setLocation, currentLocation]);
 
   // Show loading spinner while checking authentication
   if (isLoading) {
@@ -37,27 +66,6 @@ export function AuthGuard({
   // If authentication is required and user is not authenticated, don't render children
   if (requireAuth && !user) {
     return null;
-  }
-
-  // If user is authenticated but tries to access auth pages (login/signup), redirect to choose-role
-  if (!requireAuth && user && (window.location.pathname === '/login' || window.location.pathname === '/signup')) {
-    // Check if user needs to choose a role
-    if (!user.role) {
-      setLocation('/choose-role');
-      return null;
-    }
-    
-    // Redirect based on role status
-    if (user.roleStatus === 'pending') {
-      setLocation('/pending');
-      return null;
-    } else if (user.roleStatus === 'approved') {
-      setLocation('/dashboard');
-      return null;
-    } else {
-      setLocation('/home');
-      return null;
-    }
   }
 
   return <>{children}</>;
