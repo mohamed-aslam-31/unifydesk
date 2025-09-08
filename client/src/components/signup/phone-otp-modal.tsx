@@ -40,6 +40,7 @@ export function PhoneOtpModal({
   const [otp, setOtp] = useState('');
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isResending, setIsResending] = useState(false);
   const [resendCount, setResendCount] = useState(initialResendCount);
   const [cooldownTime, setCooldownTime] = useState(() => {
     if (initialCooldown && initialCooldown.endTime > Date.now()) {
@@ -91,7 +92,7 @@ export function PhoneOtpModal({
     }
   }, [open, autoSendOtp]);
 
-  const handleSendOtp = async () => {
+  const handleSendOtp = async (isResendAction = false) => {
     // Check if still in cooldown
     if (cooldownTime > 0) {
       toast({
@@ -110,6 +111,11 @@ export function PhoneOtpModal({
         variant: "destructive",
       });
       return;
+    }
+    
+    // Set loading state
+    if (isResendAction) {
+      setIsResending(true);
     }
     
     try {
@@ -199,12 +205,15 @@ export function PhoneOtpModal({
         description: error.message,
         variant: "destructive",
       });
+    } finally {
+      // Always clear loading state
+      setIsResending(false);
     }
   };
 
   const handleResendOtp = async () => {
-    // All validation is now in handleSendOtp
-    await handleSendOtp();
+    // Call handleSendOtp with resend flag
+    await handleSendOtp(true);
   };
 
   const handleSubmitOtp = async () => {
@@ -349,7 +358,7 @@ export function PhoneOtpModal({
                 const numbersOnly = value.replace(/[^0-9]/g, '');
                 setOtp(numbersOnly);
               }}
-              disabled={isSubmitting || isBlocked}
+              disabled={isSubmitting || isBlocked || isResending}
             >
               <InputOTPGroup className="gap-2">
                 {[0, 1, 2, 3, 4, 5].map((index) => (
@@ -367,7 +376,7 @@ export function PhoneOtpModal({
           {/* Submit Button */}
           <Button
             onClick={handleSubmitOtp}
-            disabled={otp.length !== 6 || isSubmitting || isBlocked}
+            disabled={otp.length !== 6 || isSubmitting || isBlocked || isResending}
             className="w-full h-12 text-base font-medium"
             size="lg"
           >
@@ -387,10 +396,10 @@ export function PhoneOtpModal({
             ) : (
               <button
                 onClick={handleResendOtp}
-                disabled={isSubmitting || isBlocked || cooldownTime > 0}
+                disabled={isSubmitting || isBlocked || isResending || cooldownTime > 0}
                 className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 underline transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Resend OTP
+                {isResending ? 'Sending...' : 'Resend OTP'}
               </button>
             )}
             
@@ -405,7 +414,7 @@ export function PhoneOtpModal({
           <Button
             variant="outline"
             onClick={onClose}
-            disabled={isSubmitting}
+            disabled={isSubmitting || isResending}
             className="w-full"
           >
             Cancel
