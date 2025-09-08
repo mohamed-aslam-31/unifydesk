@@ -21,6 +21,8 @@ import { VisualCaptcha } from "@/components/ui/visual-captcha";
 import { validateField, sendOTP, verifyOTP, signup, SignupData } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import { PhoneOtpModal } from "./phone-otp-modal";
+import { PasswordStrength } from "./password-strength";
+import { Textarea } from "@/components/ui/textarea";
 
 interface PersonalInfoProps {
   onSuccess: (sessionToken: string, user: any) => void;
@@ -710,10 +712,10 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
                 name="lastName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Last Name</FormLabel>
+                    <FormLabel>Last Name (optional)</FormLabel>
                     <FormControl>
                       <Input 
-                        placeholder="Enter last name (optional)" 
+                        placeholder="Enter last name" 
                         {...field}
                         onChange={(e) => handleLastNameChange(e.target.value)}
                       />
@@ -1095,7 +1097,11 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
                 <FormItem>
                   <FormLabel>Address *</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter your address" {...field} />
+                    <Textarea 
+                      placeholder="Enter your complete address"
+                      rows={3}
+                      {...field} 
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -1117,6 +1123,7 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
                     <FormControl>
                       <Input type="password" placeholder="Create password" {...field} />
                     </FormControl>
+                    <PasswordStrength password={field.value || ''} />
                     <FormMessage />
                   </FormItem>
                 )}
