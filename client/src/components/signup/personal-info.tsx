@@ -554,7 +554,7 @@ export function PersonalInfo({ onSuccess }: PersonalInfoProps) {
     setVerifiedPhoneNumbers(updatedVerifiedNumbers);
     
     try {
-      localStorage.setItem('verifiedPhoneNumbers', JSON.stringify([...updatedVerifiedNumbers]));
+      localStorage.setItem('verifiedPhoneNumbers', JSON.stringify(Array.from(updatedVerifiedNumbers)));
     } catch (error) {
       console.log('Failed to save verified phone number');
     }
